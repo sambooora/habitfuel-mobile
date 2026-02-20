@@ -1,0 +1,1 @@
+Any UI component references can be found in the `llms/tamagui.txt` folder.
