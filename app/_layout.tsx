@@ -1,25 +1,35 @@
-import '../public/tamagui.css'
+import "../public/tamagui.css";
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
-import { Stack } from 'expo-router'
-import { TamaguiProvider } from 'tamagui'
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { TamaguiProvider } from "tamagui";
 
-import { AppThemeProvider, useThemeSetting } from '@/hooks/use-color-scheme'
-import { tamaguiConfig } from '../tamagui.config'
+import { AppThemeProvider, useThemeSetting } from "@/hooks/use-color-scheme";
+import { NicknameProvider } from "@/hooks/use-nickname";
+import { TaskStorageProvider } from "@/hooks/use-task-storage";
+import { tamaguiConfig } from "../tamagui.config";
 
 function RootLayoutContent() {
-  const { colorScheme } = useThemeSetting()
+  const { colorScheme } = useThemeSetting();
 
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme={colorScheme}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <NicknameProvider>
+          <TaskStorageProvider>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+            </Stack>
+          </TaskStorageProvider>
+        </NicknameProvider>
       </ThemeProvider>
     </TamaguiProvider>
-  )
+  );
 }
 
 export default function RootLayout() {
@@ -27,5 +37,5 @@ export default function RootLayout() {
     <AppThemeProvider>
       <RootLayoutContent />
     </AppThemeProvider>
-  )
+  );
 }

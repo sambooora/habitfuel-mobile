@@ -1,104 +1,203 @@
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Fonts } from '@/constants/theme';
-import { useThemeSetting } from '@/hooks/use-color-scheme';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { useThemeSetting } from "@/hooks/use-color-scheme";
+import { useNickname } from "@/hooks/use-nickname";
 
 export default function SettingsScreen() {
-  const [nickname, setNickname] = useState('Alex');
+  const { nickname, setNickname } = useNickname();
   const { schemeSetting, setSchemeSetting, colorScheme } = useThemeSetting();
-  const isDark = schemeSetting === 'dark';
-  const isLight = schemeSetting === 'light';
-  const isDarkMode = colorScheme === 'dark';
-
-  useEffect(() => {
-    let isActive = true;
-    const loadNickname = async () => {
-      const saved = await AsyncStorage.getItem('nickname');
-      if (isActive && saved) {
-        setNickname(saved);
-      }
-    };
-    loadNickname();
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  const isDarkMode = colorScheme === "dark";
+  const t = isDarkMode ? Palette.dark : Palette.light;
+  const shadow = isDarkMode ? Shadows.dark : Shadows.light;
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ThemedView style={styles.container} lightColor="#F6F6F6" darkColor="#0E0F10">
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={{ flex: 1, backgroundColor: t.pageBg }}
+    >
+      <ThemedView
+        style={styles.container}
+        lightColor={Palette.light.pageBg}
+        darkColor={Palette.dark.pageBg}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
           <View style={styles.header}>
-            <ThemedText style={styles.headerLabel} lightColor="#8F98A1" darkColor="#8F98A1">
+            <ThemedText
+              style={styles.headerLabel}
+              lightColor={Palette.light.textSubtle}
+              darkColor={Palette.dark.textSubtle}
+            >
               SETTINGS
             </ThemedText>
-            <ThemedText style={styles.headerTitle} lightColor="#14171B" darkColor="#F2F3F5">
-              Preferensi
+            <ThemedText
+              style={styles.headerTitle}
+              lightColor={Palette.light.textPrimary}
+              darkColor={Palette.dark.textPrimary}
+            >
+              Preferences
             </ThemedText>
           </View>
 
-          <View style={[styles.card, isDarkMode ? styles.cardDark : null]}>
-            <ThemedText style={styles.cardLabel} lightColor="#8F98A1" darkColor="#AAB1B8">
-              Nama Panggilan
-            </ThemedText>
+          {/* Nickname Card */}
+          <View
+            style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
+          >
+            <View>
+              <ThemedText
+                style={styles.cardLabel}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                Nickname
+              </ThemedText>
+              <ThemedText
+                style={styles.helperText}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                This name will be shown on your home screen.
+              </ThemedText>
+            </View>
             <TextInput
               value={nickname}
               onChangeText={(value) => {
                 setNickname(value);
-                AsyncStorage.setItem('nickname', value);
               }}
-              placeholder="Masukkan nama panggilan"
-              placeholderTextColor="#A0A6AD"
-              style={[styles.input, isDarkMode ? styles.inputDark : null]}
+              placeholder="Enter your nickname"
+              placeholderTextColor={t.inputPlaceholder}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: t.inputBg,
+                  color: t.inputText,
+                  borderColor: t.border,
+                },
+              ]}
             />
-            <ThemedText style={styles.helperText} lightColor="#8F98A1" darkColor="#AAB1B8">
-              Nama ini akan tampil di halaman beranda.
-            </ThemedText>
           </View>
 
-          <View style={[styles.card, isDarkMode ? styles.cardDark : null]}>
+          {/* Theme Card */}
+          <View
+            style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
+          >
             <View style={styles.row}>
               <View>
-                <ThemedText style={styles.cardTitle} lightColor="#14171B" darkColor="#F2F3F5">
-                  Tema Gelap
+                <ThemedText
+                  style={styles.cardTitle}
+                  lightColor={Palette.light.textPrimary}
+                  darkColor={Palette.dark.textPrimary}
+                >
+                  Appearance
                 </ThemedText>
-                <ThemedText style={styles.cardSubtitle} lightColor="#8F98A1" darkColor="#AAB1B8">
-                  Pilih mode gelap atau terang
+                <ThemedText
+                  style={styles.cardSubtitle}
+                  lightColor={Palette.light.textSecondary}
+                  darkColor={Palette.dark.textSecondary}
+                >
+                  Choose your preferred theme
                 </ThemedText>
               </View>
             </View>
             <View style={styles.themeRow}>
               <Pressable
-                onPress={() => setSchemeSetting('light')}
+                onPress={() => setSchemeSetting("light")}
                 style={[
                   styles.themeChip,
-                  isLight ? styles.themeChipActive : null,
-                  isDarkMode ? styles.themeChipDark : null,
-                ]}>
+                  {
+                    backgroundColor:
+                      schemeSetting === "light" ? Brand.primary : t.chipBg,
+                    borderWidth: 1,
+                    borderColor:
+                      schemeSetting === "light" ? Brand.primary : t.border,
+                  },
+                ]}
+              >
                 <ThemedText
                   style={styles.themeChipText}
-                  lightColor={isLight ? '#FFFFFF' : '#8F98A1'}
-                  darkColor={isLight ? '#FFFFFF' : '#AAB1B8'}>
-                  Light
+                  lightColor={
+                    schemeSetting === "light"
+                      ? "#FFFFFF"
+                      : Palette.light.textSecondary
+                  }
+                  darkColor={
+                    schemeSetting === "light"
+                      ? "#FFFFFF"
+                      : Palette.dark.textSecondary
+                  }
+                >
+                  ☀️ Light
                 </ThemedText>
               </Pressable>
               <Pressable
-                onPress={() => setSchemeSetting('dark')}
+                onPress={() => setSchemeSetting("dark")}
                 style={[
                   styles.themeChip,
-                  isDark ? styles.themeChipActive : null,
-                  isDarkMode ? styles.themeChipDark : null,
-                ]}>
+                  {
+                    backgroundColor:
+                      schemeSetting === "dark" ? Brand.primary : t.chipBg,
+                    borderWidth: 1,
+                    borderColor:
+                      schemeSetting === "dark" ? Brand.primary : t.border,
+                  },
+                ]}
+              >
                 <ThemedText
                   style={styles.themeChipText}
-                  lightColor={isDark ? '#FFFFFF' : '#8F98A1'}
-                  darkColor={isDark ? '#FFFFFF' : '#AAB1B8'}>
-                  Dark
+                  lightColor={
+                    schemeSetting === "dark"
+                      ? "#FFFFFF"
+                      : Palette.light.textSecondary
+                  }
+                  darkColor={
+                    schemeSetting === "dark"
+                      ? "#FFFFFF"
+                      : Palette.dark.textSecondary
+                  }
+                >
+                  🌙 Dark
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => setSchemeSetting("system")}
+                style={[
+                  styles.themeChip,
+                  {
+                    backgroundColor:
+                      schemeSetting === "system" ? Brand.primary : t.chipBg,
+                    borderWidth: 1,
+                    borderColor:
+                      schemeSetting === "system" ? Brand.primary : t.border,
+                  },
+                ]}
+              >
+                <ThemedText
+                  style={styles.themeChipText}
+                  lightColor={
+                    schemeSetting === "system"
+                      ? "#FFFFFF"
+                      : Palette.light.textSecondary
+                  }
+                  darkColor={
+                    schemeSetting === "system"
+                      ? "#FFFFFF"
+                      : Palette.dark.textSecondary
+                  }
+                >
+                  ⚙️ System
                 </ThemedText>
               </Pressable>
             </View>
@@ -116,7 +215,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 24,
     gap: 18,
   },
   header: {
@@ -129,74 +228,56 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 26,
+    fontWeight: "700",
     fontFamily: Fonts.rounded,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
     gap: 12,
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
   },
   cardLabel: {
     fontSize: 12,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1.2,
+    fontWeight: "600",
   },
   input: {
-    backgroundColor: '#F0F2F4',
     borderRadius: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#14171B',
-  },
-  inputDark: {
-    backgroundColor: '#1B1E22',
-    color: '#F2F3F5',
+    borderWidth: 1,
   },
   helperText: {
     fontSize: 12,
+    lineHeight: 17,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   cardSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 4,
   },
   themeRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   themeChip: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#F0F2F4',
-  },
-  themeChipActive: {
-    backgroundColor: '#111318',
-  },
-  themeChipDark: {
-    backgroundColor: '#1B1E22',
+    alignItems: "center",
+    paddingVertical: 11,
+    borderRadius: 14,
   },
   themeChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardDark: {
-    backgroundColor: '#14171B',
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

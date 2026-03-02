@@ -1,0 +1,1161 @@
+// @ts-nocheck
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Button,
+  Input,
+  ScrollView as TScrollView,
+  Separator,
+  Sheet,
+  Text,
+  TextArea,
+  XStack,
+  YStack,
+} from "tamagui";
+
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  CATEGORY_CONFIG,
+  formatCurrency,
+  formatTransactionDate,
+  type Transaction,
+  type TransactionCategory,
+  type TransactionType,
+  useFinanceStorage,
+} from "@/hooks/use-finance-storage";
+
+const CATEGORIES = Object.keys(CATEGORY_CONFIG) as TransactionCategory[];
+
+export default function FinanceScreen() {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === "dark";
+  const t = isDarkMode ? Palette.dark : Palette.light;
+  const shadow = isDarkMode ? Shadows.dark : Shadows.light;
+  const {
+    transactions,
+    stats,
+    isLoading,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+  } = useFinanceStorage();
+
+  // Sheet states
+  const [formSheetOpen, setFormSheetOpen] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
+  const [detailTransaction, setDetailTransaction] =
+    useState<Transaction | null>(null);
+
+  // Form state
+  const [formTitle, setFormTitle] = useState("");
+  const [formAmount, setFormAmount] = useState("");
+  const [formType, setFormType] = useState<TransactionType>("expense");
+  const [formCategory, setFormCategory] =
+    useState<TransactionCategory>("other");
+  const [formNote, setFormNote] = useState("");
+
+  const resetForm = useCallback(() => {
+    setFormTitle("");
+    setFormAmount("");
+    setFormType("expense");
+    setFormCategory("other");
+    setFormNote("");
+    setEditingTransaction(null);
+  }, []);
+
+  const openAddSheet = useCallback(() => {
+    resetForm();
+    setFormSheetOpen(true);
+  }, [resetForm]);
+
+  const openEditSheet = useCallback((transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setFormTitle(transaction.title);
+    setFormAmount(transaction.amount.toString());
+    setFormType(transaction.type);
+    setFormCategory(transaction.category);
+    setFormNote(transaction.note ?? "");
+    setDetailSheetOpen(false);
+    setTimeout(() => setFormSheetOpen(true), 300);
+  }, []);
+
+  const openDetailSheet = useCallback((transaction: Transaction) => {
+    setDetailTransaction(transaction);
+    setDetailSheetOpen(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!formTitle.trim()) {
+      Alert.alert("Validation", "Please enter a title.");
+      return;
+    }
+    const amount = parseFloat(formAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert("Validation", "Please enter a valid amount.");
+      return;
+    }
+
+    if (editingTransaction) {
+      await updateTransaction(editingTransaction.id, {
+        title: formTitle.trim(),
+        amount,
+        type: formType,
+        category: formCategory,
+        note: formNote.trim() || undefined,
+      });
+    } else {
+      await addTransaction({
+        title: formTitle.trim(),
+        amount,
+        type: formType,
+        category: formCategory,
+        date: new Date().toISOString(),
+        note: formNote.trim() || undefined,
+      });
+    }
+
+    setFormSheetOpen(false);
+    resetForm();
+  }, [
+    formTitle,
+    formAmount,
+    formType,
+    formCategory,
+    formNote,
+    editingTransaction,
+    addTransaction,
+    updateTransaction,
+    resetForm,
+  ]);
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      Alert.alert(
+        "Delete Transaction",
+        "Are you sure you want to delete this transaction?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              await deleteTransaction(id);
+              setDetailSheetOpen(false);
+            },
+          },
+        ],
+      );
+    },
+    [deleteTransaction],
+  );
+
+  // Stats cards
+  const statCards = useMemo(
+    () => [
+      {
+        label: "Income",
+        amount: formatCurrency(stats.totalIncome),
+        change:
+          stats.incomeChange >= 0
+            ? `+${stats.incomeChange}% vs last week`
+            : `${stats.incomeChange}% vs last week`,
+        icon: "north-east" as const,
+        active: true,
+      },
+      {
+        label: "Expense",
+        amount: formatCurrency(stats.totalExpense),
+        change:
+          stats.expenseChange >= 0
+            ? `+${stats.expenseChange}% vs last week`
+            : `${stats.expenseChange}% vs last week`,
+        icon: "south-east" as const,
+        active: false,
+      },
+    ],
+    [stats],
+  );
+
+  // Chart data
+  const chartData = useMemo(() => {
+    const maxVal = Math.max(
+      ...stats.weeklyData.map((d) => Math.max(d.income, d.expense)),
+      1,
+    );
+    return stats.weeklyData.map((entry) => ({
+      day: entry.day,
+      inHeight: Math.max(
+        (entry.income / maxVal) * 70,
+        entry.income > 0 ? 6 : 0,
+      ),
+      outHeight: Math.max(
+        (entry.expense / maxVal) * 70,
+        entry.expense > 0 ? 6 : 0,
+      ),
+    }));
+  }, [stats.weeklyData]);
+
+  const recentTransactions = useMemo(
+    () => transactions.slice(0, 10),
+    [transactions],
+  );
+
+  const themedBg = t.cardBg;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        edges={["top", "left", "right"]}
+        style={{ flex: 1, backgroundColor: t.pageBg }}
+      >
+        <ThemedView
+          style={[styles.container, styles.center]}
+          lightColor={Palette.light.pageBg}
+          darkColor={Palette.dark.pageBg}
+        >
+          <ThemedText
+            lightColor={Palette.light.textSubtle}
+            darkColor={Palette.dark.textSubtle}
+          >
+            Loading...
+          </ThemedText>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={{ flex: 1, backgroundColor: t.pageBg }}
+    >
+      <ThemedView
+        style={styles.container}
+        lightColor={Palette.light.pageBg}
+        darkColor={Palette.dark.pageBg}
+      >
+        <TScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <ThemedText
+                style={styles.headerLabel}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                FINANCE
+              </ThemedText>
+              <ThemedText
+                style={styles.headerTitle}
+                lightColor={Palette.light.textPrimary}
+                darkColor={Palette.dark.textPrimary}
+              >
+                Statistics
+              </ThemedText>
+            </View>
+            <View style={styles.headerRight}>
+              <ThemedText
+                style={styles.balanceLabel}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                Balance
+              </ThemedText>
+              <ThemedText
+                style={[
+                  styles.balanceAmount,
+                  stats.balance >= 0
+                    ? styles.amountPositive
+                    : styles.amountNegative,
+                ]}
+                lightColor={Palette.light.textPrimary}
+                darkColor={Palette.dark.textPrimary}
+              >
+                {stats.balance >= 0 ? "+" : "-"}
+                {formatCurrency(Math.abs(stats.balance))}
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* Stat Cards */}
+          <View style={styles.statRow}>
+            {statCards.map((stat) => (
+              <View
+                key={stat.label}
+                style={[
+                  styles.statCard,
+                  {
+                    backgroundColor: stat.active
+                      ? t.statCardActiveBg
+                      : t.statCardBg,
+                  },
+                  shadow.card,
+                ]}
+              >
+                <View
+                  style={[styles.statIcon, { backgroundColor: t.statIconBg }]}
+                >
+                  <MaterialIcons
+                    name={stat.icon}
+                    size={18}
+                    color={stat.active ? Brand.primary : t.taskIconColor}
+                  />
+                </View>
+                <ThemedText
+                  style={styles.statLabel}
+                  lightColor={Palette.light.textSubtle}
+                  darkColor={Palette.dark.textSubtle}
+                >
+                  {stat.label}
+                </ThemedText>
+                <ThemedText
+                  style={styles.statAmount}
+                  lightColor={Palette.light.textPrimary}
+                  darkColor={Palette.dark.textPrimary}
+                >
+                  {stat.amount}
+                </ThemedText>
+                <ThemedText
+                  style={styles.statChange}
+                  lightColor={Palette.light.textSecondary}
+                  darkColor={Palette.dark.textSecondary}
+                >
+                  {stat.change}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+
+          {/* Overview Chart */}
+          <View style={styles.sectionHeader}>
+            <ThemedText
+              style={styles.sectionTitle}
+              lightColor={Palette.light.textPrimary}
+              darkColor={Palette.dark.textPrimary}
+            >
+              This Week
+            </ThemedText>
+            <View style={styles.legend}>
+              <View style={styles.legendItem}>
+                <View
+                  style={[
+                    styles.legendDot,
+                    { backgroundColor: t.chartBarPrimary },
+                  ]}
+                />
+                <ThemedText
+                  style={styles.legendText}
+                  lightColor={Palette.light.textSubtle}
+                  darkColor={Palette.dark.textSubtle}
+                >
+                  In
+                </ThemedText>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[
+                    styles.legendDot,
+                    { backgroundColor: t.chartBarMuted },
+                  ]}
+                />
+                <ThemedText
+                  style={styles.legendText}
+                  lightColor={Palette.light.textSubtle}
+                  darkColor={Palette.dark.textSubtle}
+                >
+                  Out
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+
+          <View
+            style={[styles.chart, { backgroundColor: t.cardBg }, shadow.card]}
+          >
+            {chartData.map((entry, index) => (
+              <View key={`${entry.day}-${index}`} style={styles.chartColumn}>
+                <View style={styles.chartBars}>
+                  <View
+                    style={[
+                      styles.chartBar,
+                      {
+                        height: entry.inHeight || 2,
+                        backgroundColor: t.chartBarPrimary,
+                      },
+                      entry.inHeight === 0 && { opacity: 0.2 },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.chartBarMuted,
+                      {
+                        height: entry.outHeight || 2,
+                        backgroundColor: t.chartBarMuted,
+                      },
+                      entry.outHeight === 0 && { opacity: 0.2 },
+                    ]}
+                  />
+                </View>
+                <ThemedText
+                  style={styles.chartLabel}
+                  lightColor={Palette.light.textSubtle}
+                  darkColor={Palette.dark.textSubtle}
+                >
+                  {entry.day}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+
+          {/* Transactions List */}
+          <View style={styles.sectionHeader}>
+            <ThemedText
+              style={styles.sectionTitle}
+              lightColor={Palette.light.textPrimary}
+              darkColor={Palette.dark.textPrimary}
+            >
+              Recent Transactions
+            </ThemedText>
+            <ThemedText
+              style={styles.sectionLink}
+              lightColor={Palette.light.textSubtle}
+              darkColor={Palette.dark.textSubtle}
+            >
+              {transactions.length} Total
+            </ThemedText>
+          </View>
+
+          {recentTransactions.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: themedBg }]}>
+              <MaterialIcons
+                name="receipt-long"
+                size={40}
+                color={t.emptyIcon}
+              />
+              <ThemedText
+                style={styles.emptyText}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                No transactions yet.{"\n"}Tap + to add your first one!
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={styles.transactionList}>
+              {recentTransactions.map((item) => {
+                const catConfig =
+                  CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG.other;
+                return (
+                  <Button
+                    key={item.id}
+                    unstyled
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => openDetailSheet(item)}
+                  >
+                    <View
+                      style={[
+                        styles.transactionRow,
+                        { backgroundColor: t.cardBg },
+                        shadow.cardSubtle,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.transactionIcon,
+                          {
+                            backgroundColor:
+                              item.type === "income"
+                                ? t.transactionIncomeBg
+                                : t.transactionExpenseBg,
+                          },
+                        ]}
+                      >
+                        <MaterialIcons
+                          name={catConfig.icon as any}
+                          size={18}
+                          color={
+                            item.type === "income"
+                              ? t.transactionIncomeIcon
+                              : t.transactionExpenseIcon
+                          }
+                        />
+                      </View>
+                      <View style={styles.transactionInfo}>
+                        <ThemedText
+                          style={styles.transactionTitle}
+                          lightColor={Palette.light.textPrimary}
+                          darkColor={Palette.dark.textPrimary}
+                        >
+                          {item.title}
+                        </ThemedText>
+                        <ThemedText
+                          style={styles.transactionTime}
+                          lightColor={Palette.light.textSubtle}
+                          darkColor={Palette.dark.textSubtle}
+                        >
+                          {formatTransactionDate(item.date)}
+                        </ThemedText>
+                      </View>
+                      <ThemedText
+                        style={[
+                          styles.transactionAmount,
+                          item.type === "income" ? styles.amountPositive : null,
+                        ]}
+                        lightColor={Palette.light.textPrimary}
+                        darkColor={Palette.dark.textPrimary}
+                      >
+                        {item.type === "income" ? "+" : "-"}
+                        {formatCurrency(item.amount)}
+                      </ThemedText>
+                    </View>
+                  </Button>
+                );
+              })}
+            </View>
+          )}
+        </TScrollView>
+
+        {/* FAB */}
+        <Button
+          unstyled
+          pressStyle={{ opacity: 0.8, scale: 0.96 }}
+          onPress={openAddSheet}
+          style={[styles.fab, { backgroundColor: t.fabBg }, shadow.fab]}
+        >
+          <MaterialIcons name="add" size={22} color={t.fabIcon} />
+        </Button>
+
+        {/* ═══════════════════════════════════════════════════════ */}
+        {/* DETAIL SHEET                                           */}
+        {/* ═══════════════════════════════════════════════════════ */}
+        <Sheet
+          open={detailSheetOpen}
+          onOpenChange={setDetailSheetOpen}
+          dismissOnSnapToBottom
+          snapPointsMode="fit"
+          modal
+          animation="medium"
+          zIndex={100_000}
+        >
+          <Sheet.Overlay
+            animation="lazy"
+            enterStyle={{ opacity: 0 }}
+            exitStyle={{ opacity: 0 }}
+          />
+          <Sheet.Handle />
+          <Sheet.Frame
+            paddingHorizontal="$5"
+            paddingTop="$4"
+            paddingBottom="$6"
+            borderTopLeftRadius={28}
+            borderTopRightRadius={28}
+          >
+            {detailTransaction && (
+              <TScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                {/* Header */}
+                <YStack alignItems="center" marginBottom="$5" gap="$2">
+                  <YStack
+                    width={56}
+                    height={56}
+                    borderRadius={20}
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor={
+                      detailTransaction.type === "income"
+                        ? t.transactionIncomeBg
+                        : t.transactionExpenseBg
+                    }
+                    marginBottom="$2"
+                  >
+                    <MaterialIcons
+                      name={
+                        (CATEGORY_CONFIG[detailTransaction.category]?.icon ||
+                          "more-horiz") as any
+                      }
+                      size={28}
+                      color={
+                        detailTransaction.type === "income"
+                          ? t.transactionIncomeIcon
+                          : t.transactionExpenseIcon
+                      }
+                    />
+                  </YStack>
+                  <Text fontSize={20} fontWeight="700" textAlign="center">
+                    {detailTransaction.title}
+                  </Text>
+                  <Text
+                    fontSize={28}
+                    fontWeight="800"
+                    color={
+                      detailTransaction.type === "income"
+                        ? Brand.success
+                        : Brand.danger
+                    }
+                  >
+                    {detailTransaction.type === "income" ? "+" : "-"}
+                    {formatCurrency(detailTransaction.amount)}
+                  </Text>
+                </YStack>
+
+                <Separator marginBottom="$4" />
+
+                {/* Info Rows */}
+                <YStack gap="$3" marginBottom="$5">
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <Text fontSize={13} color="$colorSubtle">
+                      Type
+                    </Text>
+                    <Text fontSize={14} fontWeight="600">
+                      {detailTransaction.type === "income"
+                        ? "Income"
+                        : "Expense"}
+                    </Text>
+                  </XStack>
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <Text fontSize={13} color="$colorSubtle">
+                      Category
+                    </Text>
+                    <Text fontSize={14} fontWeight="600">
+                      {CATEGORY_CONFIG[detailTransaction.category]?.label ||
+                        "Other"}
+                    </Text>
+                  </XStack>
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <Text fontSize={13} color="$colorSubtle">
+                      Date
+                    </Text>
+                    <Text fontSize={14} fontWeight="600">
+                      {formatTransactionDate(detailTransaction.date)}
+                    </Text>
+                  </XStack>
+                  {detailTransaction.note ? (
+                    <XStack
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                    >
+                      <Text fontSize={13} color="$colorSubtle">
+                        Note
+                      </Text>
+                      <Text
+                        fontSize={14}
+                        fontWeight="600"
+                        flex={1}
+                        textAlign="right"
+                        marginLeft="$4"
+                      >
+                        {detailTransaction.note}
+                      </Text>
+                    </XStack>
+                  ) : null}
+                </YStack>
+
+                {/* Actions */}
+                <XStack gap="$3" marginBottom="$3">
+                  <Button
+                    flex={1}
+                    backgroundColor={Brand.primary}
+                    color="#FFFFFF"
+                    borderRadius={14}
+                    height={48}
+                    pressStyle={{ opacity: 0.85 }}
+                    icon={
+                      <MaterialIcons name="edit" size={18} color="#FFFFFF" />
+                    }
+                    onPress={() => openEditSheet(detailTransaction)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    flex={1}
+                    backgroundColor={Brand.danger}
+                    color="#FFFFFF"
+                    borderRadius={14}
+                    height={48}
+                    pressStyle={{ opacity: 0.85 }}
+                    icon={
+                      <MaterialIcons name="delete" size={18} color="#FFFFFF" />
+                    }
+                    onPress={() => handleDelete(detailTransaction.id)}
+                  >
+                    Delete
+                  </Button>
+                </XStack>
+
+                <Button
+                  unstyled
+                  alignSelf="center"
+                  paddingVertical="$3"
+                  onPress={() => setDetailSheetOpen(false)}
+                >
+                  <Text fontSize={14} fontWeight="500" color="$colorSubtle">
+                    Close
+                  </Text>
+                </Button>
+              </TScrollView>
+            )}
+          </Sheet.Frame>
+        </Sheet>
+
+        {/* ═══════════════════════════════════════════════════════ */}
+        {/* ADD / EDIT SHEET                                       */}
+        {/* ═══════════════════════════════════════════════════════ */}
+        <Sheet
+          open={formSheetOpen}
+          onOpenChange={(open: boolean) => {
+            setFormSheetOpen(open);
+            if (!open) resetForm();
+          }}
+          dismissOnSnapToBottom
+          snapPointsMode="percent"
+          snapPoints={[92]}
+          modal
+          animation="medium"
+          zIndex={100_000}
+        >
+          <Sheet.Overlay
+            animation="lazy"
+            enterStyle={{ opacity: 0 }}
+            exitStyle={{ opacity: 0 }}
+          />
+          <Sheet.Handle />
+          <Sheet.Frame
+            borderTopLeftRadius={28}
+            borderTopRightRadius={28}
+            paddingHorizontal="$5"
+            paddingTop="$4"
+            paddingBottom="$6"
+          >
+            <TScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {/* Header */}
+              <XStack
+                justifyContent="space-between"
+                alignItems="center"
+                marginBottom="$5"
+              >
+                <Text fontSize={20} fontWeight="700">
+                  {editingTransaction ? "Edit Transaction" : "Add Transaction"}
+                </Text>
+                <Button
+                  unstyled
+                  onPress={() => {
+                    setFormSheetOpen(false);
+                    resetForm();
+                  }}
+                  padding="$1"
+                >
+                  <MaterialIcons name="close" size={24} color={t.textSubtle} />
+                </Button>
+              </XStack>
+
+              {/* Type Selector */}
+              <Text
+                fontSize={12}
+                letterSpacing={1}
+                textTransform="uppercase"
+                color="$colorSubtle"
+                marginBottom="$2"
+              >
+                Type
+              </Text>
+              <XStack gap="$3" marginBottom="$4">
+                <Button
+                  flex={1}
+                  height={48}
+                  borderRadius={14}
+                  borderWidth={1}
+                  borderColor={
+                    formType === "income" ? Brand.success : "$borderColor"
+                  }
+                  backgroundColor={
+                    formType === "income" ? Brand.success : "transparent"
+                  }
+                  pressStyle={{ opacity: 0.85 }}
+                  onPress={() => setFormType("income")}
+                  icon={
+                    <MaterialIcons
+                      name="north-east"
+                      size={16}
+                      color={formType === "income" ? "#FFFFFF" : t.textSubtle}
+                    />
+                  }
+                >
+                  <Text
+                    fontWeight="600"
+                    fontSize={14}
+                    color={formType === "income" ? "#FFFFFF" : "$color"}
+                  >
+                    Income
+                  </Text>
+                </Button>
+                <Button
+                  flex={1}
+                  height={48}
+                  borderRadius={14}
+                  borderWidth={1}
+                  borderColor={
+                    formType === "expense" ? Brand.danger : "$borderColor"
+                  }
+                  backgroundColor={
+                    formType === "expense" ? Brand.danger : "transparent"
+                  }
+                  pressStyle={{ opacity: 0.85 }}
+                  onPress={() => setFormType("expense")}
+                  icon={
+                    <MaterialIcons
+                      name="south-east"
+                      size={16}
+                      color={formType === "expense" ? "#FFFFFF" : t.textSubtle}
+                    />
+                  }
+                >
+                  <Text
+                    fontWeight="600"
+                    fontSize={14}
+                    color={formType === "expense" ? "#FFFFFF" : "$color"}
+                  >
+                    Expense
+                  </Text>
+                </Button>
+              </XStack>
+
+              {/* Title */}
+              <Text
+                fontSize={12}
+                letterSpacing={1}
+                textTransform="uppercase"
+                color="$colorSubtle"
+                marginBottom="$2"
+              >
+                Title
+              </Text>
+              <Input
+                value={formTitle}
+                onChangeText={setFormTitle}
+                placeholder="e.g. Grocery Store"
+                borderRadius={14}
+                height={48}
+                marginBottom="$4"
+                fontSize={15}
+              />
+
+              {/* Amount */}
+              <Text
+                fontSize={12}
+                letterSpacing={1}
+                textTransform="uppercase"
+                color="$colorSubtle"
+                marginBottom="$2"
+              >
+                Amount ($)
+              </Text>
+              <Input
+                value={formAmount}
+                onChangeText={setFormAmount}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+                borderRadius={14}
+                height={48}
+                marginBottom="$4"
+                fontSize={15}
+              />
+
+              {/* Category */}
+              <Text
+                fontSize={12}
+                letterSpacing={1}
+                textTransform="uppercase"
+                color="$colorSubtle"
+                marginBottom="$2"
+              >
+                Category
+              </Text>
+              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                {CATEGORIES.map((cat) => {
+                  const isSelected = formCategory === cat;
+                  const config = CATEGORY_CONFIG[cat];
+                  return (
+                    <Button
+                      key={cat}
+                      size="$3"
+                      borderRadius={12}
+                      borderWidth={1}
+                      borderColor={isSelected ? Brand.primary : "$borderColor"}
+                      backgroundColor={
+                        isSelected ? Brand.primary : "$backgroundFocus"
+                      }
+                      pressStyle={{ opacity: 0.8 }}
+                      onPress={() => setFormCategory(cat)}
+                      icon={
+                        <MaterialIcons
+                          name={config.icon as any}
+                          size={14}
+                          color={isSelected ? "#FFFFFF" : t.textSubtle}
+                        />
+                      }
+                    >
+                      <Text
+                        fontSize={12}
+                        fontWeight="500"
+                        color={isSelected ? "#FFFFFF" : "$color"}
+                      >
+                        {config.label}
+                      </Text>
+                    </Button>
+                  );
+                })}
+              </XStack>
+
+              {/* Note */}
+              <Text
+                fontSize={12}
+                letterSpacing={1}
+                textTransform="uppercase"
+                color="$colorSubtle"
+                marginBottom="$2"
+              >
+                Note (optional)
+              </Text>
+              <TextArea
+                value={formNote}
+                onChangeText={setFormNote}
+                placeholder="Add a note..."
+                borderRadius={14}
+                marginBottom="$4"
+                numberOfLines={3}
+                minHeight={80}
+                fontSize={15}
+                textAlignVertical="top"
+              />
+
+              {/* Save Button */}
+              <Button
+                backgroundColor={Brand.primary}
+                color="#FFFFFF"
+                borderRadius={16}
+                height={52}
+                pressStyle={{ opacity: 0.85 }}
+                marginTop="$2"
+                marginBottom="$2"
+                onPress={handleSave}
+              >
+                <Text color="#FFFFFF" fontSize={15} fontWeight="700">
+                  {editingTransaction
+                    ? "Update Transaction"
+                    : "Add Transaction"}
+                </Text>
+              </Button>
+            </TScrollView>
+          </Sheet.Frame>
+        </Sheet>
+      </ThemedView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  center: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 18,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerLabel: {
+    fontSize: 12,
+    letterSpacing: 1.4,
+    fontFamily: Fonts.rounded,
+  },
+  headerTitle: {
+    fontSize: 26,
+    marginTop: 4,
+    fontWeight: "700",
+    fontFamily: Fonts.rounded,
+  },
+  headerRight: {
+    alignItems: "flex-end",
+  },
+  balanceLabel: {
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  balanceAmount: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  statRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 16,
+    gap: 8,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statLabel: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  statAmount: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  statChange: {
+    fontSize: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  sectionLink: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  legend: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 12,
+  },
+  chart: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  chartColumn: {
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  chartBars: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 4,
+    height: 80,
+  },
+  chartBar: {
+    width: 6,
+    borderRadius: 99,
+  },
+  chartBarMuted: {
+    width: 6,
+    borderRadius: 99,
+  },
+  chartLabel: {
+    fontSize: 12,
+  },
+  transactionList: {
+    gap: 12,
+  },
+  transactionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 18,
+    padding: 14,
+    gap: 12,
+  },
+  transactionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  transactionInfo: {
+    flex: 1,
+  },
+  transactionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  transactionTime: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  transactionAmount: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  amountPositive: {
+    color: Brand.success,
+  },
+  amountNegative: {
+    color: Brand.danger,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    borderRadius: 20,
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  fab: {
+    position: "absolute",
+    right: 24,
+    bottom: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
