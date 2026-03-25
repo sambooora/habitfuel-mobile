@@ -1,5 +1,6 @@
 // @ts-nocheck
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
@@ -27,6 +28,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { isFocusTask, usePomodoroStorage } from "@/hooks/use-pomodoro-storage";
 import {
   formatTaskDate,
   getSubtaskProgress,
@@ -60,6 +62,8 @@ export default function ExploreScreen() {
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
+  const router = useRouter();
+  const { getRecord, hasCompletedRequiredSessions } = usePomodoroStorage();
   const {
     filteredTasks,
     stats,
@@ -242,9 +246,33 @@ export default function ExploreScreen() {
 
   const handleCycleStatus = useCallback(
     async (id: string) => {
+      const task = filteredTasks.find((t) => t.id === id);
+      if (!task) {
+        await cycleStatus(id);
+        return;
+      }
+
+      // Guard: focus tasks (urgent/high) cannot be moved to "done"
+      // unless they have completed the required pomodoro sessions.
+      const movingToDone = task.status === "in_progress";
+      if (movingToDone && isFocusTask(task.priority)) {
+        const ok = hasCompletedRequiredSessions(id, task.priority);
+        if (!ok) {
+          const record = getRecord(id, task.priority);
+          const required = record.requiredSessions;
+          const remaining = required - record.completedSessions;
+          Alert.alert(
+            "Pomodoro Required 🍅",
+            `This task requires ${required} focus session${required > 1 ? "s" : ""} to complete.\n\nYou still need ${remaining} more session${remaining > 1 ? "s" : ""}.\n\nStart a focus session from the Home tab.`,
+            [{ text: "OK" }],
+          );
+          return;
+        }
+      }
+
       await cycleStatus(id);
     },
-    [cycleStatus],
+    [cycleStatus, filteredTasks, hasCompletedRequiredSessions, getRecord],
   );
 
   // ─── Status tabs with counts ─────────────────────────────────
@@ -669,6 +697,14 @@ export default function ExploreScreen() {
                 const progress = getSubtaskProgress(task);
                 const overdue = isOverdue(task);
                 const dueToday = isDueToday(task);
+                const isFocus = isFocusTask(task.priority);
+                const pomRecord = isFocus
+                  ? getRecord(task.id, task.priority)
+                  : null;
+                const pomRequired = isFocus ? pomRecord!.requiredSessions : 0;
+                const pomDone = isFocus
+                  ? pomRecord!.completedSessions >= pomRequired
+                  : true;
 
                 return (
                   <TouchableOpacity
@@ -721,6 +757,38 @@ export default function ExploreScreen() {
                             {priorityConfig.label}
                           </ThemedText>
                         </View>
+                        {/*{isFocus && task.status !== "done" && (
+                          <View
+                            style={[
+                              styles.pomBadge,
+                              {
+                                backgroundColor: pomDone
+                                  ? isDarkMode
+                                    ? "#0A8F5A22"
+                                    : "#E6F5EE"
+                                  : isDarkMode
+                                    ? "#252930"
+                                    : "#F0F2F4",
+                              },
+                            ]}
+                          >
+                            <MaterialIcons
+                              name="timer"
+                              size={10}
+                              color={pomDone ? "#0A8F5A" : t.textSubtle}
+                            />
+                            <ThemedText
+                              style={[
+                                styles.pomBadgeText,
+                                {
+                                  color: pomDone ? "#0A8F5A" : t.textSubtle,
+                                },
+                              ]}
+                            >
+                              {pomRecord!.completedSessions}/{pomRequired}
+                            </ThemedText>
+                          </View>
+                        )}*/}
                       </View>
 
                       {/* Title */}
@@ -796,6 +864,31 @@ export default function ExploreScreen() {
                           )}
                         </View>
 
+                        {/*{isFocus && task.status !== "done" && (
+                          <TouchableOpacity
+                            style={[
+                              styles.pomStartBtn,
+                              { backgroundColor: t.playBg },
+                            ]}
+                            activeOpacity={0.7}
+                            onPress={() =>
+                              router.push({
+                                pathname: "/pomodoro",
+                                params: {
+                                  taskId: task.id,
+                                  taskTitle: task.title,
+                                  taskPriority: task.priority,
+                                },
+                              })
+                            }
+                          >
+                            <MaterialIcons
+                              name="play-arrow"
+                              size={14}
+                              color={t.playIcon}
+                            />
+                          </TouchableOpacity>
+                        )}*/}
                         {task.dueDate && (
                           <View
                             style={[
@@ -956,6 +1049,56 @@ export default function ExploreScreen() {
                       </Text>
                     </Button>
                   </XStack>
+
+                  {/* Pomodoro progress row (focus tasks only) */}
+                  {isFocusTask(refreshedDetailTask.priority) &&
+                    refreshedDetailTask.status !== "done" &&
+                    (() => {
+                      const rec = getRecord(
+                        refreshedDetailTask.id,
+                        refreshedDetailTask.priority,
+                      );
+                      const req = rec.requiredSessions;
+                      const done = rec.completedSessions >= req;
+                      return (
+                        <XStack
+                          justifyContent="space-between"
+                          alignItems="center"
+                        >
+                          <Text fontSize={13} color="$colorSubtle">
+                            Focus Sessions
+                          </Text>
+                          <XStack alignItems="center" gap="$2">
+                            <XStack alignItems="center" gap={4}>
+                              {Array.from({ length: req }).map((_, i) => (
+                                <View
+                                  key={i}
+                                  style={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: 4,
+                                    backgroundColor:
+                                      i < rec.completedSessions
+                                        ? "#0A8F5A"
+                                        : isDarkMode
+                                          ? "#252930"
+                                          : "#E0E2E6",
+                                  }}
+                                />
+                              ))}
+                            </XStack>
+                            <Text
+                              fontSize={13}
+                              fontWeight="700"
+                              color={done ? "#0A8F5A" : "$colorSubtle"}
+                            >
+                              {rec.completedSessions}/{req}
+                              {done ? " ✓" : ""}
+                            </Text>
+                          </XStack>
+                        </XStack>
+                      );
+                    })()}
 
                   {/* Priority */}
                   <XStack justifyContent="space-between" alignItems="center">
@@ -1180,6 +1323,46 @@ export default function ExploreScreen() {
                 </YStack>
 
                 {/* Actions */}
+                {isFocusTask(refreshedDetailTask.priority) &&
+                  refreshedDetailTask.status !== "done" && (
+                    <Button
+                      backgroundColor={isDarkMode ? "#252930" : "#F0F2F4"}
+                      borderRadius={14}
+                      height={48}
+                      pressStyle={{ opacity: 0.85 }}
+                      marginBottom="$3"
+                      icon={
+                        <MaterialIcons
+                          name="play-arrow"
+                          size={18}
+                          color={t.textPrimary}
+                        />
+                      }
+                      onPress={() => {
+                        setDetailSheetOpen(false);
+                        setTimeout(
+                          () =>
+                            router.push({
+                              pathname: "/pomodoro",
+                              params: {
+                                taskId: refreshedDetailTask.id,
+                                taskTitle: refreshedDetailTask.title,
+                                taskPriority: refreshedDetailTask.priority,
+                              },
+                            }),
+                          300,
+                        );
+                      }}
+                    >
+                      <Text
+                        fontSize={14}
+                        fontWeight="600"
+                        color={t.textPrimary}
+                      >
+                        Start Focus Session
+                      </Text>
+                    </Button>
+                  )}
                 <XStack gap="$3" marginBottom="$3">
                   <Button
                     flex={1}
@@ -1926,6 +2109,7 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     fontSize: 12,
     fontWeight: "600",
+    color: Brand.primary,
   },
   tabBadgeTextActive: {
     fontWeight: "700",
@@ -2082,8 +2266,27 @@ const styles = StyleSheet.create({
 
   // ── Shared ──────────────────────────────────────────────────
   priorityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  pomBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  pomBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  pomStartBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

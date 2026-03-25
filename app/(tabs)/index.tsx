@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRouter } from "expo-router";
 import { useMemo } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -8,6 +9,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Fonts, Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useNickname } from "@/hooks/use-nickname";
+import { usePomodoroStorage } from "@/hooks/use-pomodoro-storage";
 import {
   PRIORITY_CONFIG,
   TAG_CONFIG,
@@ -19,7 +21,8 @@ export default function HomeScreen() {
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
-
+  const router = useRouter();
+  const { getRecord } = usePomodoroStorage();
   const { nickname } = useNickname();
   const { tasks } = useTaskStorage();
 
@@ -137,18 +140,9 @@ export default function HomeScreen() {
               >
                 CONSISTENCY SCORE
               </ThemedText>
-              <View style={[styles.badge, { backgroundColor: t.badgeBg }]}>
-                <ThemedText
-                  style={styles.badgeText}
-                  lightColor={Palette.light.badgeText}
-                  darkColor={Palette.dark.badgeText}
-                >
-                  +12%
-                </ThemedText>
-              </View>
             </View>
 
-            {/* Score + mini chart side by side */}
+            {/* Score + mini chart side by side : Score mengitung persentase dari progress 69 hari */}
             <View style={styles.scoreRow}>
               <View style={styles.scoreLeft}>
                 <ThemedText
@@ -181,7 +175,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Progress bar */}
+            {/* Progress bar: ini menghitung dari progress 69 hari steaks jika habit ada yg tidak dilakukan akan mengulang ke 0 */}
             <View
               style={[
                 styles.progressTrack,
@@ -249,7 +243,7 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          {/* ── Daily Habits ───────────────────────────────── */}
+          {/* ── Daily Habits : akan menjadi button tab able untuk counter habit hariannya. max 4 dalam 1 row atau bisa geser geser */}
           <View style={styles.sectionHeader}>
             <ThemedText
               style={styles.sectionTitle}
@@ -320,74 +314,151 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.taskList}>
-            {focusTasks.map((task) => {
-              const priorityConfig = PRIORITY_CONFIG[task.priority];
-              const tagConfig = TAG_CONFIG[task.tag];
-
-              return (
-                <View
-                  key={task.id}
-                  style={[
-                    styles.taskCard,
-                    { backgroundColor: t.cardBg },
-                    shadow.card,
-                  ]}
+            {focusTasks.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyState,
+                  { backgroundColor: t.cardBg },
+                  shadow.card,
+                ]}
+              >
+                <MaterialIcons
+                  name="check-circle-outline"
+                  size={36}
+                  color={t.textSubtle}
+                  style={{ marginBottom: 8 }}
+                />
+                <ThemedText
+                  style={styles.emptyTitle}
+                  lightColor={Palette.light.textPrimary}
+                  darkColor={Palette.dark.textPrimary}
                 >
+                  No Focus Tasks
+                </ThemedText>
+                <ThemedText
+                  style={styles.emptySubtitle}
+                  lightColor={Palette.light.textSubtle}
+                  darkColor={Palette.dark.textSubtle}
+                >
+                  Add a high or urgent priority task to start a focus session.
+                </ThemedText>
+              </View>
+            ) : (
+              focusTasks.map((task) => {
+                const priorityConfig = PRIORITY_CONFIG[task.priority];
+                const tagConfig = TAG_CONFIG[task.tag];
+                const record = getRecord(task.id, task.priority);
+                const required = record.requiredSessions;
+                const completedSessions = record.completedSessions;
+                const allDone = completedSessions >= required;
+
+                return (
                   <View
+                    key={task.id}
                     style={[
-                      styles.taskIconWrap,
-                      { backgroundColor: t.taskIconBg },
+                      styles.taskCard,
+                      { backgroundColor: t.cardBg },
+                      shadow.card,
                     ]}
                   >
-                    <MaterialIcons
-                      name={tagConfig.icon as any}
-                      size={18}
-                      color={t.taskIconColor}
-                    />
-                  </View>
-                  <View style={styles.taskInfo}>
-                    <ThemedText
-                      style={styles.taskTitle}
-                      lightColor={Palette.light.textPrimary}
-                      darkColor={Palette.dark.textPrimary}
-                      numberOfLines={1}
-                    >
-                      {task.title}
-                    </ThemedText>
                     <View
                       style={[
-                        styles.priorityBadge,
-                        { backgroundColor: priorityConfig.bgColor },
+                        styles.taskIconWrap,
+                        { backgroundColor: t.taskIconBg },
                       ]}
                     >
-                      <View
-                        style={[
-                          styles.priorityDot,
-                          { backgroundColor: priorityConfig.color },
-                        ]}
+                      <MaterialIcons
+                        name={tagConfig.icon as any}
+                        size={18}
+                        color={t.taskIconColor}
                       />
-                      <ThemedText
-                        style={[
-                          styles.priorityLabel,
-                          { color: priorityConfig.color },
-                        ]}
-                      >
-                        {priorityConfig.label}
-                      </ThemedText>
                     </View>
+                    <View style={styles.taskInfo}>
+                      <ThemedText
+                        style={styles.taskTitle}
+                        lightColor={Palette.light.textPrimary}
+                        darkColor={Palette.dark.textPrimary}
+                        numberOfLines={1}
+                      >
+                        {task.title}
+                      </ThemedText>
+                      <View style={styles.taskBadgeRow}>
+                        <View
+                          style={[
+                            styles.priorityBadge,
+                            { backgroundColor: priorityConfig.bgColor },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.priorityDot,
+                              { backgroundColor: priorityConfig.color },
+                            ]}
+                          />
+                          <ThemedText
+                            style={[
+                              styles.priorityLabel,
+                              { color: priorityConfig.color },
+                            ]}
+                          >
+                            {priorityConfig.label}
+                          </ThemedText>
+                        </View>
+                        {/* Pomodoro session progress badge */}
+                        <View
+                          style={[
+                            styles.sessionBadge,
+                            {
+                              backgroundColor: allDone
+                                ? isDarkMode
+                                  ? "#0A8F5A22"
+                                  : "#E6F5EE"
+                                : isDarkMode
+                                  ? "#252930"
+                                  : "#F0F2F4",
+                            },
+                          ]}
+                        >
+                          <MaterialIcons
+                            name="timer"
+                            size={10}
+                            color={allDone ? "#0A8F5A" : t.textSubtle}
+                          />
+                          <ThemedText
+                            style={[
+                              styles.sessionBadgeText,
+                              { color: allDone ? "#0A8F5A" : t.textSubtle },
+                            ]}
+                          >
+                            {completedSessions}/{required}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.playButton, { backgroundColor: t.playBg }]}
+                      activeOpacity={0.7}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/pomodoro",
+                          params: {
+                            taskId: task.id,
+                            taskTitle: task.title,
+                            taskPriority: task.priority,
+                          },
+                        })
+                      }
+                    >
+                      <MaterialIcons
+                        name="play-arrow"
+                        size={18}
+                        color={t.playIcon}
+                      />
+                    </TouchableOpacity>
                   </View>
-                  <View
-                    style={[styles.playButton, { backgroundColor: t.playBg }]}
-                  >
-                    <MaterialIcons
-                      name="play-arrow"
-                      size={18}
-                      color={t.playIcon}
-                    />
-                  </View>
-                </View>
-              );
-            })}
+                );
+              })
+            )}
           </View>
         </ScrollView>
       </ThemedView>
@@ -570,7 +641,43 @@ const styles = StyleSheet.create({
 
   // ── Task List ───────────────────────────────────────────────
   taskList: {
-    gap: 12,
+    gap: 10,
+  },
+  taskBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    width: "100%",
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  sessionBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  sessionBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   taskCard: {
     flexDirection: "row",

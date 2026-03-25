@@ -21,8 +21,10 @@ import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   CATEGORY_CONFIG,
+  computeStats,
   formatCurrency,
   formatTransactionDate,
+  getWeekLabel,
   type Transaction,
   type TransactionCategory,
   type TransactionType,
@@ -38,12 +40,26 @@ export default function FinanceScreen() {
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
   const {
     transactions,
-    stats,
     isLoading,
     addTransaction,
     updateTransaction,
     deleteTransaction,
   } = useFinanceStorage();
+
+  // Week navigation: 0 = this week, -1 = last week, etc.
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  // Recompute stats for the viewed week whenever offset or transactions change
+  const stats = useMemo(
+    () => computeStats(transactions, weekOffset),
+    [transactions, weekOffset],
+  );
+
+  const weekLabel = useMemo(() => getWeekLabel(weekOffset), [weekOffset]);
+
+  const goToPrevWeek = useCallback(() => setWeekOffset((o) => o - 1), []);
+  const goToNextWeek = useCallback(() => setWeekOffset((o) => o + 1), []);
+  const isCurrentWeek = weekOffset === 0;
 
   // Sheet states
   const [formSheetOpen, setFormSheetOpen] = useState(false);
@@ -156,7 +172,7 @@ export default function FinanceScreen() {
     [deleteTransaction],
   );
 
-  // Stats cards
+  // Stats cards — income/expense totals reflect the viewed week
   const statCards = useMemo(
     () => [
       {
@@ -164,8 +180,8 @@ export default function FinanceScreen() {
         amount: formatCurrency(stats.totalIncome),
         change:
           stats.incomeChange >= 0
-            ? `+${stats.incomeChange}% vs last week`
-            : `${stats.incomeChange}% vs last week`,
+            ? `+${stats.incomeChange}% vs prev week`
+            : `${stats.incomeChange}% vs prev week`,
         icon: "north-east" as const,
         active: true,
       },
@@ -174,8 +190,8 @@ export default function FinanceScreen() {
         amount: formatCurrency(stats.totalExpense),
         change:
           stats.expenseChange >= 0
-            ? `+${stats.expenseChange}% vs last week`
-            : `${stats.expenseChange}% vs last week`,
+            ? `+${stats.expenseChange}% vs prev week`
+            : `${stats.expenseChange}% vs prev week`,
         icon: "south-east" as const,
         active: false,
       },
@@ -343,7 +359,7 @@ export default function FinanceScreen() {
               lightColor={Palette.light.textPrimary}
               darkColor={Palette.dark.textPrimary}
             >
-              This Week
+              {weekLabel}
             </ThemedText>
             <View style={styles.legend}>
               <View style={styles.legendItem}>
@@ -377,6 +393,59 @@ export default function FinanceScreen() {
                 </ThemedText>
               </View>
             </View>
+          </View>
+
+          {/* Week navigation */}
+          <View style={styles.weekNav}>
+            <Button
+              unstyled
+              pressStyle={{ opacity: 0.6 }}
+              onPress={goToPrevWeek}
+              style={[
+                styles.weekNavBtn,
+                { backgroundColor: t.cardBg },
+                shadow.cardSubtle,
+              ]}
+            >
+              <MaterialIcons
+                name="chevron-left"
+                size={20}
+                color={t.textSubtle}
+              />
+              <ThemedText
+                style={styles.weekNavText}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                Prev
+              </ThemedText>
+            </Button>
+
+            <Button
+              unstyled
+              pressStyle={{ opacity: 0.6 }}
+              onPress={goToNextWeek}
+              disabled={isCurrentWeek}
+              style={[
+                styles.weekNavBtn,
+                { backgroundColor: t.cardBg },
+                shadow.cardSubtle,
+                isCurrentWeek && { opacity: 0.35 },
+              ]}
+            >
+              <ThemedText
+                style={styles.weekNavText}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                Next
+              </ThemedText>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={t.textSubtle}
+              />
+            </Button>
           </View>
 
           <View
@@ -967,6 +1036,23 @@ export default function FinanceScreen() {
 }
 
 const styles = StyleSheet.create({
+  weekNav: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  weekNavBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  weekNavText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
   container: {
     flex: 1,
   },

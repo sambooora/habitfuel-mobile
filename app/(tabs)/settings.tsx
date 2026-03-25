@@ -56,21 +56,23 @@ export default function SettingsScreen() {
           <View
             style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
           >
-            <View>
-              <ThemedText
-                style={styles.cardLabel}
-                lightColor={Palette.light.textSubtle}
-                darkColor={Palette.dark.textSubtle}
-              >
-                Nickname
-              </ThemedText>
-              <ThemedText
-                style={styles.helperText}
-                lightColor={Palette.light.textSubtle}
-                darkColor={Palette.dark.textSubtle}
-              >
-                This name will be shown on your home screen.
-              </ThemedText>
+            <View style={styles.row}>
+              <View>
+                <ThemedText
+                  style={styles.cardTitle}
+                  lightColor={Palette.light.textPrimary}
+                  darkColor={Palette.dark.textPrimary}
+                >
+                  Nickname
+                </ThemedText>
+                <ThemedText
+                  style={styles.cardSubtitle}
+                  lightColor={Palette.light.textSecondary}
+                  darkColor={Palette.dark.textSecondary}
+                >
+                  This name will be shown on your home screen.
+                </ThemedText>
+              </View>
             </View>
             <TextInput
               value={nickname}
