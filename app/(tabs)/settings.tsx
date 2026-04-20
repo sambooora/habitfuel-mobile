@@ -9,13 +9,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { Fonts, Palette, Shadows } from "@/constants/theme";
+import { useAccentColor } from "@/hooks/use-accent-color";
 import { useThemeSetting } from "@/hooks/use-color-scheme";
 import { useNickname } from "@/hooks/use-nickname";
 
 export default function SettingsScreen() {
   const { nickname, setNickname } = useNickname();
   const { schemeSetting, setSchemeSetting, colorScheme } = useThemeSetting();
+  const { accentId, accentColor, options, setAccentId } = useAccentColor();
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
@@ -92,7 +94,7 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* Theme Card */}
+          {/* Appearance Card */}
           <View
             style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
           >
@@ -121,10 +123,10 @@ export default function SettingsScreen() {
                   styles.themeChip,
                   {
                     backgroundColor:
-                      schemeSetting === "light" ? Brand.primary : t.chipBg,
+                      schemeSetting === "light" ? accentColor : t.chipBg,
                     borderWidth: 1,
                     borderColor:
-                      schemeSetting === "light" ? Brand.primary : t.border,
+                      schemeSetting === "light" ? accentColor : t.border,
                   },
                 ]}
               >
@@ -150,10 +152,10 @@ export default function SettingsScreen() {
                   styles.themeChip,
                   {
                     backgroundColor:
-                      schemeSetting === "dark" ? Brand.primary : t.chipBg,
+                      schemeSetting === "dark" ? accentColor : t.chipBg,
                     borderWidth: 1,
                     borderColor:
-                      schemeSetting === "dark" ? Brand.primary : t.border,
+                      schemeSetting === "dark" ? accentColor : t.border,
                   },
                 ]}
               >
@@ -179,10 +181,10 @@ export default function SettingsScreen() {
                   styles.themeChip,
                   {
                     backgroundColor:
-                      schemeSetting === "system" ? Brand.primary : t.chipBg,
+                      schemeSetting === "system" ? accentColor : t.chipBg,
                     borderWidth: 1,
                     borderColor:
-                      schemeSetting === "system" ? Brand.primary : t.border,
+                      schemeSetting === "system" ? accentColor : t.border,
                   },
                 ]}
               >
@@ -202,6 +204,62 @@ export default function SettingsScreen() {
                   ⚙️ System
                 </ThemedText>
               </Pressable>
+            </View>
+          </View>
+
+          {/* Accent Color Card */}
+          <View
+            style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
+          >
+            <View style={styles.row}>
+              <View>
+                <ThemedText
+                  style={styles.cardTitle}
+                  lightColor={Palette.light.textPrimary}
+                  darkColor={Palette.dark.textPrimary}
+                >
+                  Accent Color
+                </ThemedText>
+                <ThemedText
+                  style={styles.cardSubtitle}
+                  lightColor={Palette.light.textSecondary}
+                  darkColor={Palette.dark.textSecondary}
+                >
+                  {"Choose your app's primary color"}
+                </ThemedText>
+              </View>
+            </View>
+            <View style={styles.accentRow}>
+              {options.map((option) => {
+                const isSelected = accentId === option.id;
+                const isWhite = option.id === "white";
+                return (
+                  <Pressable
+                    key={option.id}
+                    onPress={() => setAccentId(option.id)}
+                    style={[
+                      styles.accentSwatchWrapper,
+                      { borderColor: isSelected ? accentColor : "transparent" },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.accentSwatch,
+                        { backgroundColor: option.swatch },
+                        isWhite &&
+                          !isSelected && {
+                            borderWidth: 1,
+                            borderColor: t.border,
+                          },
+                        isSelected && {
+                          borderWidth: 3,
+                          borderColor: "#FFFFFF",
+                        },
+                      ]}
+                    />
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         </ScrollView>
@@ -281,5 +339,21 @@ const styles = StyleSheet.create({
   themeChipText: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  accentRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  accentSwatchWrapper: {
+    padding: 3,
+    borderWidth: 2,
+    borderRadius: 24,
+    borderColor: "transparent",
+  },
+  accentSwatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
 });

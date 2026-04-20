@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Button, Sheet, Text, XStack, YStack } from "tamagui";
 
 import { Brand, Palette } from "@/constants/theme";
+import { useAccentColor } from "@/hooks/use-accent-color";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
@@ -60,6 +61,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const t = isDarkMode ? Palette.dark : Palette.light;
+  const { accentColor } = useAccentColor();
 
   const today = useMemo(() => new Date(), []);
   const initialDate = value ?? today;
@@ -282,7 +284,7 @@ export function DatePicker({
                         chromeless={!isSelected}
                         backgroundColor={
                           isSelected
-                            ? Brand.primary
+                            ? accentColor
                             : isToday
                               ? t.chipBg
                               : "transparent"
@@ -300,7 +302,7 @@ export function DatePicker({
                             isSelected
                               ? "#FFFFFF"
                               : isToday
-                                ? Brand.primary
+                                ? accentColor
                                 : "$color"
                           }
                         >
@@ -333,7 +335,7 @@ export function DatePicker({
                 flex={1}
                 size="$4"
                 borderRadius={14}
-                backgroundColor={Brand.primary}
+                backgroundColor={accentColor}
                 onPress={handleToday}
                 pressStyle={{ opacity: 0.7 }}
               >

@@ -13,12 +13,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Button,
+  Dialog,
   Input,
   ScrollView as TScrollView,
   Separator,
-  Sheet,
   Text,
   TextArea,
+  Unspaced,
+  VisuallyHidden,
   XStack,
   YStack,
 } from "tamagui";
@@ -27,6 +29,7 @@ import { DatePicker } from "@/components/date-picker";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { useAccentColor } from "@/hooks/use-accent-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { isFocusTask, usePomodoroStorage } from "@/hooks/use-pomodoro-storage";
 import {
@@ -62,6 +65,7 @@ export default function ExploreScreen() {
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
+  const { accentColor, accentOnColor } = useAccentColor();
   const router = useRouter();
   const { getRecord, hasCompletedRequiredSessions } = usePomodoroStorage();
   const {
@@ -86,7 +90,7 @@ export default function ExploreScreen() {
     resetFilters,
   } = useTaskStorage();
 
-  // Sheet states
+  // Dialog states
   const [formSheetOpen, setFormSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -500,7 +504,7 @@ export default function ExploreScreen() {
               style={[
                 styles.filterBtn,
                 { backgroundColor: themedCardBg, borderColor: themedBorder },
-                activeFilterCount > 0 && { borderColor: Brand.primary },
+                activeFilterCount > 0 && { borderColor: accentColor },
               ]}
               onPress={() => setFilterSheetOpen(true)}
             >
@@ -532,7 +536,7 @@ export default function ExploreScreen() {
                   key={tab.key}
                   style={[
                     styles.tab,
-                    isActive ? styles.tabActive : null,
+                    isActive ? { backgroundColor: accentColor } : null,
                     !isActive && { backgroundColor: t.cardBg },
                   ]}
                   onPress={() => setStatusFilter(tab.key)}
@@ -941,1023 +945,1130 @@ export default function ExploreScreen() {
         </Button>
 
         {/* ═══════════════════════════════════════════════════════ */}
-        {/* DETAIL SHEET                                           */}
+        {/* DETAIL DIALOG                                           */}
         {/* ═══════════════════════════════════════════════════════ */}
-        <Sheet
-          open={detailSheetOpen}
-          onOpenChange={setDetailSheetOpen}
-          dismissOnSnapToBottom
-          snapPointsMode="fit"
-          modal
-          animation="medium"
-          zIndex={100_000}
-        >
-          <Sheet.Overlay
-            animation="lazy"
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
-          <Sheet.Handle />
-          <Sheet.Frame
-            paddingHorizontal="$5"
-            paddingTop="$4"
-            paddingBottom="$6"
-            borderTopLeftRadius={28}
-            borderTopRightRadius={28}
-          >
-            {refreshedDetailTask && (
-              <TScrollView
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                {/* Header */}
-                <YStack alignItems="center" marginBottom="$4" gap="$2">
-                  <YStack
-                    width={56}
-                    height={56}
-                    borderRadius={20}
-                    alignItems="center"
-                    justifyContent="center"
-                    backgroundColor={
-                      TAG_CONFIG[refreshedDetailTask.tag]?.bgColor || "#F0F2F4"
-                    }
-                    marginBottom="$2"
-                  >
-                    <MaterialIcons
-                      name={
-                        (TAG_CONFIG[refreshedDetailTask.tag]?.icon ||
-                          "label") as any
-                      }
-                      size={28}
-                      color={
-                        TAG_CONFIG[refreshedDetailTask.tag]?.color || "#8F98A1"
-                      }
-                    />
-                  </YStack>
-                  <Text fontSize={20} fontWeight="700" textAlign="center">
-                    {refreshedDetailTask.title}
-                  </Text>
-                  {refreshedDetailTask.description ? (
-                    <Text
-                      fontSize={14}
-                      color="$colorSubtle"
-                      textAlign="center"
-                      lineHeight={20}
-                    >
-                      {refreshedDetailTask.description}
-                    </Text>
-                  ) : null}
-                </YStack>
-
-                <Separator marginBottom="$4" />
-
-                {/* Info Rows */}
-                <YStack gap="$3" marginBottom="$4">
-                  {/* Status */}
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <Text fontSize={13} color="$colorSubtle">
-                      Status
-                    </Text>
-                    <Button
-                      unstyled
-                      flexDirection="row"
-                      alignItems="center"
-                      gap={5}
-                      paddingHorizontal={12}
-                      paddingVertical={6}
-                      borderRadius={999}
-                      backgroundColor={
-                        STATUS_CONFIG[refreshedDetailTask.status].color + "18"
-                      }
-                      pressStyle={{ opacity: 0.7 }}
-                      onPress={() => handleCycleStatus(refreshedDetailTask.id)}
-                    >
-                      <MaterialIcons
-                        name={
-                          STATUS_CONFIG[refreshedDetailTask.status].icon as any
-                        }
-                        size={16}
-                        color={STATUS_CONFIG[refreshedDetailTask.status].color}
-                      />
-                      <Text
-                        fontSize={13}
-                        fontWeight="700"
-                        color={STATUS_CONFIG[refreshedDetailTask.status].color}
-                      >
-                        {STATUS_CONFIG[refreshedDetailTask.status].label}
-                      </Text>
-                    </Button>
-                  </XStack>
-
-                  {/* Pomodoro progress row (focus tasks only) */}
-                  {isFocusTask(refreshedDetailTask.priority) &&
-                    refreshedDetailTask.status !== "done" &&
-                    (() => {
-                      const rec = getRecord(
-                        refreshedDetailTask.id,
-                        refreshedDetailTask.priority,
-                      );
-                      const req = rec.requiredSessions;
-                      const done = rec.completedSessions >= req;
-                      return (
-                        <XStack
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Text fontSize={13} color="$colorSubtle">
-                            Focus Sessions
-                          </Text>
-                          <XStack alignItems="center" gap="$2">
-                            <XStack alignItems="center" gap={4}>
-                              {Array.from({ length: req }).map((_, i) => (
-                                <View
-                                  key={i}
-                                  style={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: 4,
-                                    backgroundColor:
-                                      i < rec.completedSessions
-                                        ? "#0A8F5A"
-                                        : isDarkMode
-                                          ? "#252930"
-                                          : "#E0E2E6",
-                                  }}
-                                />
-                              ))}
-                            </XStack>
-                            <Text
-                              fontSize={13}
-                              fontWeight="700"
-                              color={done ? "#0A8F5A" : "$colorSubtle"}
-                            >
-                              {rec.completedSessions}/{req}
-                              {done ? " ✓" : ""}
-                            </Text>
-                          </XStack>
-                        </XStack>
-                      );
-                    })()}
-
-                  {/* Priority */}
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <Text fontSize={13} color="$colorSubtle">
-                      Priority
-                    </Text>
+        <Dialog open={detailSheetOpen} onOpenChange={setDetailSheetOpen} modal>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              bg="$background"
+              opacity={0.5}
+              animateOnly={["transform", "opacity"]}
+              transition={[
+                "quicker",
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
+            />
+            <Dialog.FocusScope focusOnIdle>
+            <Dialog.Content
+              transition={[
+                "quicker",
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+              enterStyle={{ x: 0, y: 20, opacity: 0 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              width="92%"
+              maxHeight="85%"
+              borderRadius={28}
+              paddingHorizontal="$5"
+              paddingTop="$4"
+              paddingBottom="$6"
+            >
+              <VisuallyHidden>
+                <Dialog.Title>Task Detail</Dialog.Title>
+                <Dialog.Description>View task details</Dialog.Description>
+              </VisuallyHidden>
+              {refreshedDetailTask && (
+                <TScrollView
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {/* Header */}
+                  <YStack alignItems="center" marginBottom="$4" gap="$2">
                     <YStack
-                      paddingHorizontal={12}
-                      paddingVertical={5}
-                      borderRadius={999}
-                      backgroundColor={
-                        PRIORITY_CONFIG[refreshedDetailTask.priority].bgColor
-                      }
-                    >
-                      <Text
-                        fontSize={12}
-                        fontWeight="700"
-                        color={
-                          PRIORITY_CONFIG[refreshedDetailTask.priority].color
-                        }
-                      >
-                        {PRIORITY_CONFIG[refreshedDetailTask.priority].label}
-                      </Text>
-                    </YStack>
-                  </XStack>
-
-                  {/* Tag */}
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <Text fontSize={13} color="$colorSubtle">
-                      Tag
-                    </Text>
-                    <XStack
+                      width={56}
+                      height={56}
+                      borderRadius={20}
                       alignItems="center"
-                      gap={5}
-                      paddingHorizontal={12}
-                      paddingVertical={5}
-                      borderRadius={999}
+                      justifyContent="center"
                       backgroundColor={
                         TAG_CONFIG[refreshedDetailTask.tag]?.bgColor ||
                         "#F0F2F4"
                       }
+                      marginBottom="$2"
                     >
                       <MaterialIcons
                         name={
                           (TAG_CONFIG[refreshedDetailTask.tag]?.icon ||
                             "label") as any
                         }
-                        size={14}
+                        size={28}
                         color={
                           TAG_CONFIG[refreshedDetailTask.tag]?.color ||
                           "#8F98A1"
                         }
                       />
+                    </YStack>
+                    <Text fontSize={20} fontWeight="700" textAlign="center">
+                      {refreshedDetailTask.title}
+                    </Text>
+                    {refreshedDetailTask.description ? (
                       <Text
-                        fontSize={12}
-                        fontWeight="600"
-                        color={
-                          TAG_CONFIG[refreshedDetailTask.tag]?.color ||
-                          "#8F98A1"
-                        }
+                        fontSize={14}
+                        color="$colorSubtle"
+                        textAlign="center"
+                        lineHeight={20}
                       >
-                        {TAG_CONFIG[refreshedDetailTask.tag]?.label || "Other"}
+                        {refreshedDetailTask.description}
                       </Text>
-                    </XStack>
-                  </XStack>
+                    ) : null}
+                  </YStack>
 
-                  {/* Due Date */}
-                  {refreshedDetailTask.dueDate && (
+                  <Separator marginBottom="$4" />
+
+                  {/* Info Rows */}
+                  <YStack gap="$3" marginBottom="$4">
+                    {/* Status */}
                     <XStack justifyContent="space-between" alignItems="center">
                       <Text fontSize={13} color="$colorSubtle">
-                        Due Date
+                        Status
                       </Text>
-                      <Text
-                        fontSize={14}
-                        fontWeight="600"
-                        color={
-                          isOverdue(refreshedDetailTask)
-                            ? Brand.danger
-                            : undefined
-                        }
-                      >
-                        {formatTaskDate(refreshedDetailTask.dueDate)}
-                        {isOverdue(refreshedDetailTask) ? " (Overdue)" : ""}
-                      </Text>
-                    </XStack>
-                  )}
-
-                  {/* Created */}
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <Text fontSize={13} color="$colorSubtle">
-                      Created
-                    </Text>
-                    <Text fontSize={14} fontWeight="600">
-                      {formatTaskDate(refreshedDetailTask.createdAt)}
-                    </Text>
-                  </XStack>
-
-                  {/* Note */}
-                  {refreshedDetailTask.note ? (
-                    <XStack
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                    >
-                      <Text fontSize={13} color="$colorSubtle">
-                        Note
-                      </Text>
-                      <Text
-                        fontSize={14}
-                        fontWeight="600"
-                        flex={1}
-                        textAlign="right"
-                        marginLeft="$4"
-                      >
-                        {refreshedDetailTask.note}
-                      </Text>
-                    </XStack>
-                  ) : null}
-                </YStack>
-
-                <Separator marginBottom="$4" />
-
-                {/* Subtasks */}
-                <YStack marginBottom="$4">
-                  <Text fontSize={15} fontWeight="700" marginBottom="$3">
-                    Subtasks (
-                    {
-                      refreshedDetailTask.subtasks.filter((s) => s.completed)
-                        .length
-                    }
-                    /{refreshedDetailTask.subtasks.length})
-                  </Text>
-
-                  {refreshedDetailTask.subtasks.map((sub) => (
-                    <XStack
-                      key={sub.id}
-                      alignItems="center"
-                      paddingVertical="$2"
-                      borderBottomWidth={1}
-                      borderBottomColor="$borderColor"
-                      gap="$2"
-                    >
                       <Button
                         unstyled
-                        padding="$0.5"
+                        flexDirection="row"
+                        alignItems="center"
+                        gap={5}
+                        paddingHorizontal={12}
+                        paddingVertical={6}
+                        borderRadius={999}
+                        backgroundColor={
+                          STATUS_CONFIG[refreshedDetailTask.status].color + "18"
+                        }
+                        pressStyle={{ opacity: 0.7 }}
                         onPress={() =>
-                          handleToggleSubtask(refreshedDetailTask.id, sub.id)
+                          handleCycleStatus(refreshedDetailTask.id)
                         }
                       >
                         <MaterialIcons
                           name={
-                            sub.completed
-                              ? "check-box"
-                              : "check-box-outline-blank"
+                            STATUS_CONFIG[refreshedDetailTask.status]
+                              .icon as any
                           }
-                          size={22}
-                          color={sub.completed ? "#0A8F5A" : themedSubText}
+                          size={16}
+                          color={
+                            STATUS_CONFIG[refreshedDetailTask.status].color
+                          }
                         />
+                        <Text
+                          fontSize={13}
+                          fontWeight="700"
+                          color={
+                            STATUS_CONFIG[refreshedDetailTask.status].color
+                          }
+                        >
+                          {STATUS_CONFIG[refreshedDetailTask.status].label}
+                        </Text>
                       </Button>
-                      <Text
-                        flex={1}
-                        fontSize={14}
-                        textDecorationLine={
-                          sub.completed ? "line-through" : "none"
-                        }
-                        opacity={sub.completed ? 0.5 : 1}
-                        numberOfLines={2}
-                      >
-                        {sub.title}
+                    </XStack>
+
+                    {/* Pomodoro progress row (focus tasks only) */}
+                    {isFocusTask(refreshedDetailTask.priority) &&
+                      refreshedDetailTask.status !== "done" &&
+                      (() => {
+                        const rec = getRecord(
+                          refreshedDetailTask.id,
+                          refreshedDetailTask.priority,
+                        );
+                        const req = rec.requiredSessions;
+                        const done = rec.completedSessions >= req;
+                        return (
+                          <XStack
+                            justifyContent="space-between"
+                            alignItems="center"
+                          >
+                            <Text fontSize={13} color="$colorSubtle">
+                              Focus Sessions
+                            </Text>
+                            <XStack alignItems="center" gap="$2">
+                              <XStack alignItems="center" gap={4}>
+                                {Array.from({ length: req }).map((_, i) => (
+                                  <View
+                                    key={i}
+                                    style={{
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: 4,
+                                      backgroundColor:
+                                        i < rec.completedSessions
+                                          ? "#0A8F5A"
+                                          : isDarkMode
+                                            ? "#252930"
+                                            : "#E0E2E6",
+                                    }}
+                                  />
+                                ))}
+                              </XStack>
+                              <Text
+                                fontSize={13}
+                                fontWeight="700"
+                                color={done ? "#0A8F5A" : "$colorSubtle"}
+                              >
+                                {rec.completedSessions}/{req}
+                                {done ? " ✓" : ""}
+                              </Text>
+                            </XStack>
+                          </XStack>
+                        );
+                      })()}
+
+                    {/* Priority */}
+                    <XStack justifyContent="space-between" alignItems="center">
+                      <Text fontSize={13} color="$colorSubtle">
+                        Priority
                       </Text>
-                      <Button
-                        unstyled
-                        onPress={() =>
-                          handleDeleteSubtask(refreshedDetailTask.id, sub.id)
+                      <YStack
+                        paddingHorizontal={12}
+                        paddingVertical={5}
+                        borderRadius={999}
+                        backgroundColor={
+                          PRIORITY_CONFIG[refreshedDetailTask.priority].bgColor
+                        }
+                      >
+                        <Text
+                          fontSize={12}
+                          fontWeight="700"
+                          color={
+                            PRIORITY_CONFIG[refreshedDetailTask.priority].color
+                          }
+                        >
+                          {PRIORITY_CONFIG[refreshedDetailTask.priority].label}
+                        </Text>
+                      </YStack>
+                    </XStack>
+
+                    {/* Tag */}
+                    <XStack justifyContent="space-between" alignItems="center">
+                      <Text fontSize={13} color="$colorSubtle">
+                        Tag
+                      </Text>
+                      <XStack
+                        alignItems="center"
+                        gap={5}
+                        paddingHorizontal={12}
+                        paddingVertical={5}
+                        borderRadius={999}
+                        backgroundColor={
+                          TAG_CONFIG[refreshedDetailTask.tag]?.bgColor ||
+                          "#F0F2F4"
                         }
                       >
                         <MaterialIcons
-                          name="close"
-                          size={18}
-                          color={themedSubText}
+                          name={
+                            (TAG_CONFIG[refreshedDetailTask.tag]?.icon ||
+                              "label") as any
+                          }
+                          size={14}
+                          color={
+                            TAG_CONFIG[refreshedDetailTask.tag]?.color ||
+                            "#8F98A1"
+                          }
+                        />
+                        <Text
+                          fontSize={12}
+                          fontWeight="600"
+                          color={
+                            TAG_CONFIG[refreshedDetailTask.tag]?.color ||
+                            "#8F98A1"
+                          }
+                        >
+                          {TAG_CONFIG[refreshedDetailTask.tag]?.label ||
+                            "Other"}
+                        </Text>
+                      </XStack>
+                    </XStack>
+
+                    {/* Due Date */}
+                    {refreshedDetailTask.dueDate && (
+                      <XStack
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Text fontSize={13} color="$colorSubtle">
+                          Due Date
+                        </Text>
+                        <Text
+                          fontSize={14}
+                          fontWeight="600"
+                          color={
+                            isOverdue(refreshedDetailTask)
+                              ? Brand.danger
+                              : undefined
+                          }
+                        >
+                          {formatTaskDate(refreshedDetailTask.dueDate)}
+                          {isOverdue(refreshedDetailTask) ? " (Overdue)" : ""}
+                        </Text>
+                      </XStack>
+                    )}
+
+                    {/* Created */}
+                    <XStack justifyContent="space-between" alignItems="center">
+                      <Text fontSize={13} color="$colorSubtle">
+                        Created
+                      </Text>
+                      <Text fontSize={14} fontWeight="600">
+                        {formatTaskDate(refreshedDetailTask.createdAt)}
+                      </Text>
+                    </XStack>
+
+                    {/* Note */}
+                    {refreshedDetailTask.note ? (
+                      <XStack
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                      >
+                        <Text fontSize={13} color="$colorSubtle">
+                          Note
+                        </Text>
+                        <Text
+                          fontSize={14}
+                          fontWeight="600"
+                          flex={1}
+                          textAlign="right"
+                          marginLeft="$4"
+                        >
+                          {refreshedDetailTask.note}
+                        </Text>
+                      </XStack>
+                    ) : null}
+                  </YStack>
+
+                  <Separator marginBottom="$4" />
+
+                  {/* Subtasks */}
+                  <YStack marginBottom="$4">
+                    <Text fontSize={15} fontWeight="700" marginBottom="$3">
+                      Subtasks (
+                      {
+                        refreshedDetailTask.subtasks.filter((s) => s.completed)
+                          .length
+                      }
+                      /{refreshedDetailTask.subtasks.length})
+                    </Text>
+
+                    {refreshedDetailTask.subtasks.map((sub) => (
+                      <XStack
+                        key={sub.id}
+                        alignItems="center"
+                        paddingVertical="$2"
+                        borderBottomWidth={1}
+                        borderBottomColor="$borderColor"
+                        gap="$2"
+                      >
+                        <Button
+                          unstyled
+                          padding="$0.5"
+                          onPress={() =>
+                            handleToggleSubtask(refreshedDetailTask.id, sub.id)
+                          }
+                        >
+                          <MaterialIcons
+                            name={
+                              sub.completed
+                                ? "check-box"
+                                : "check-box-outline-blank"
+                            }
+                            size={22}
+                            color={sub.completed ? "#0A8F5A" : themedSubText}
+                          />
+                        </Button>
+                        <Text
+                          flex={1}
+                          fontSize={14}
+                          textDecorationLine={
+                            sub.completed ? "line-through" : "none"
+                          }
+                          opacity={sub.completed ? 0.5 : 1}
+                          numberOfLines={2}
+                        >
+                          {sub.title}
+                        </Text>
+                        <Button
+                          unstyled
+                          onPress={() =>
+                            handleDeleteSubtask(refreshedDetailTask.id, sub.id)
+                          }
+                        >
+                          <MaterialIcons
+                            name="close"
+                            size={18}
+                            color={themedSubText}
+                          />
+                        </Button>
+                      </XStack>
+                    ))}
+
+                    {/* Add subtask */}
+                    <XStack
+                      alignItems="center"
+                      gap="$2"
+                      marginTop="$2"
+                      backgroundColor="$backgroundFocus"
+                      borderRadius={12}
+                      borderWidth={1}
+                      borderColor="$borderColor"
+                      paddingHorizontal="$3"
+                      paddingVertical="$2"
+                    >
+                      <Input
+                        unstyled
+                        flex={1}
+                        fontSize={14}
+                        placeholder="Add a subtask..."
+                        value={subtaskInput}
+                        onChangeText={setSubtaskInput}
+                        onSubmitEditing={() =>
+                          handleAddSubtask(refreshedDetailTask.id)
+                        }
+                        returnKeyType="done"
+                      />
+                      <Button
+                        unstyled
+                        onPress={() => handleAddSubtask(refreshedDetailTask.id)}
+                        disabled={!subtaskInput.trim()}
+                        opacity={subtaskInput.trim() ? 1 : 0.4}
+                      >
+                        <MaterialIcons
+                          name="add-circle"
+                          size={24}
+                          color={
+                            subtaskInput.trim() ? "#0A8F5A" : themedSubText
+                          }
                         />
                       </Button>
                     </XStack>
-                  ))}
+                  </YStack>
 
-                  {/* Add subtask */}
-                  <XStack
-                    alignItems="center"
-                    gap="$2"
-                    marginTop="$2"
-                    backgroundColor="$backgroundFocus"
-                    borderRadius={12}
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    paddingHorizontal="$3"
-                    paddingVertical="$2"
-                  >
-                    <Input
-                      unstyled
+                  {/* Actions */}
+                  {isFocusTask(refreshedDetailTask.priority) &&
+                    refreshedDetailTask.status !== "done" && (
+                      <Button
+                        backgroundColor={isDarkMode ? "#252930" : "#F0F2F4"}
+                        borderRadius={14}
+                        height={48}
+                        pressStyle={{ opacity: 0.85 }}
+                        marginBottom="$3"
+                        icon={
+                          <MaterialIcons
+                            name="play-arrow"
+                            size={18}
+                            color={t.textPrimary}
+                          />
+                        }
+                        onPress={() => {
+                          setDetailSheetOpen(false);
+                          setTimeout(
+                            () =>
+                              router.push({
+                                pathname: "/pomodoro",
+                                params: {
+                                  taskId: refreshedDetailTask.id,
+                                  taskTitle: refreshedDetailTask.title,
+                                  taskPriority: refreshedDetailTask.priority,
+                                },
+                              }),
+                            300,
+                          );
+                        }}
+                      >
+                        <Text
+                          fontSize={14}
+                          fontWeight="600"
+                          color={t.textPrimary}
+                        >
+                          Start Focus Session
+                        </Text>
+                      </Button>
+                    )}
+                  <XStack gap="$3" marginBottom="$3">
+                    <Button
                       flex={1}
-                      fontSize={14}
-                      placeholder="Add a subtask..."
-                      value={subtaskInput}
-                      onChangeText={setSubtaskInput}
-                      onSubmitEditing={() =>
-                        handleAddSubtask(refreshedDetailTask.id)
-                      }
-                      returnKeyType="done"
-                    />
-                    <Button
-                      unstyled
-                      onPress={() => handleAddSubtask(refreshedDetailTask.id)}
-                      disabled={!subtaskInput.trim()}
-                      opacity={subtaskInput.trim() ? 1 : 0.4}
-                    >
-                      <MaterialIcons
-                        name="add-circle"
-                        size={24}
-                        color={subtaskInput.trim() ? "#0A8F5A" : themedSubText}
-                      />
-                    </Button>
-                  </XStack>
-                </YStack>
-
-                {/* Actions */}
-                {isFocusTask(refreshedDetailTask.priority) &&
-                  refreshedDetailTask.status !== "done" && (
-                    <Button
-                      backgroundColor={isDarkMode ? "#252930" : "#F0F2F4"}
+                      backgroundColor={accentColor}
+                      color={accentOnColor}
                       borderRadius={14}
                       height={48}
                       pressStyle={{ opacity: 0.85 }}
-                      marginBottom="$3"
                       icon={
                         <MaterialIcons
-                          name="play-arrow"
+                          name="edit"
                           size={18}
-                          color={t.textPrimary}
+                          color={accentOnColor}
                         />
                       }
-                      onPress={() => {
-                        setDetailSheetOpen(false);
-                        setTimeout(
-                          () =>
-                            router.push({
-                              pathname: "/pomodoro",
-                              params: {
-                                taskId: refreshedDetailTask.id,
-                                taskTitle: refreshedDetailTask.title,
-                                taskPriority: refreshedDetailTask.priority,
-                              },
-                            }),
-                          300,
-                        );
-                      }}
+                      onPress={() => openEditSheet(refreshedDetailTask)}
                     >
-                      <Text
-                        fontSize={14}
-                        fontWeight="600"
-                        color={t.textPrimary}
-                      >
-                        Start Focus Session
-                      </Text>
+                      Edit
                     </Button>
-                  )}
-                <XStack gap="$3" marginBottom="$3">
-                  <Button
-                    flex={1}
-                    backgroundColor={Brand.primary}
-                    color="#FFFFFF"
-                    borderRadius={14}
-                    height={48}
-                    pressStyle={{ opacity: 0.85 }}
-                    icon={
-                      <MaterialIcons name="edit" size={18} color="#FFFFFF" />
-                    }
-                    onPress={() => openEditSheet(refreshedDetailTask)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    flex={1}
-                    backgroundColor={Brand.danger}
-                    color="#FFFFFF"
-                    borderRadius={14}
-                    height={48}
-                    pressStyle={{ opacity: 0.85 }}
-                    icon={
-                      <MaterialIcons name="delete" size={18} color="#FFFFFF" />
-                    }
-                    onPress={() => handleDelete(refreshedDetailTask.id)}
-                  >
-                    Delete
-                  </Button>
-                </XStack>
+                    <Button
+                      flex={1}
+                      backgroundColor={Brand.danger}
+                      color="#FFFFFF"
+                      borderRadius={14}
+                      height={48}
+                      pressStyle={{ opacity: 0.85 }}
+                      icon={
+                        <MaterialIcons
+                          name="delete"
+                          size={18}
+                          color="#FFFFFF"
+                        />
+                      }
+                      onPress={() => handleDelete(refreshedDetailTask.id)}
+                    >
+                      Delete
+                    </Button>
+                  </XStack>
 
-                <Button
-                  unstyled
-                  alignSelf="center"
-                  paddingVertical="$3"
-                  onPress={() => setDetailSheetOpen(false)}
-                >
-                  <Text fontSize={14} fontWeight="500" color="$colorSubtle">
-                    Close
-                  </Text>
-                </Button>
-              </TScrollView>
-            )}
-          </Sheet.Frame>
-        </Sheet>
+                </TScrollView>
+              )}
+              <Unspaced>
+                <Dialog.Close asChild>
+                  <Button
+                    unstyled
+                    position="absolute"
+                    right="$3"
+                    top="$3"
+                    width={32}
+                    height={32}
+                    borderRadius={16}
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor={themedCardBg}
+                    pressStyle={{ opacity: 0.7 }}
+                  >
+                    <MaterialIcons name="close" size={18} color={themedSubText} />
+                  </Button>
+                </Dialog.Close>
+              </Unspaced>
+            </Dialog.Content>
+            </Dialog.FocusScope>
+          </Dialog.Portal>
+        </Dialog>
 
         {/* ═══════════════════════════════════════════════════════ */}
-        {/* ADD / EDIT SHEET                                       */}
+        {/* ADD / EDIT DIALOG                                       */}
         {/* ═══════════════════════════════════════════════════════ */}
-        <Sheet
+        <Dialog
           open={formSheetOpen}
           onOpenChange={(open: boolean) => {
             setFormSheetOpen(open);
             if (!open) resetForm();
           }}
-          dismissOnSnapToBottom
-          snapPointsMode="percent"
-          snapPoints={[92]}
           modal
-          animation="medium"
-          zIndex={100_000}
         >
-          <Sheet.Overlay
-            animation="lazy"
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
-          <Sheet.Handle />
-          <Sheet.Frame
-            borderTopLeftRadius={28}
-            borderTopRightRadius={28}
-            paddingHorizontal="$5"
-            paddingTop="$4"
-            paddingBottom="$6"
-          >
-            <TScrollView
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              bounces={false}
+          <Dialog.Portal>
+            <Dialog.Overlay
+              bg="$background"
+              opacity={0.5}
+              animateOnly={["transform", "opacity"]}
+              transition={[
+                "quicker",
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
+            />
+            <Dialog.FocusScope focusOnIdle>
+            <Dialog.Content
+              transition={[
+                "quicker",
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+              enterStyle={{ x: 0, y: 20, opacity: 0 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              width="92%"
+              maxHeight="90%"
+              borderRadius={28}
+              paddingHorizontal="$5"
+              paddingTop="$4"
+              paddingBottom="$6"
+              gap="$4"
             >
-              {/* Header */}
-              <XStack
-                justifyContent="space-between"
-                alignItems="center"
-                marginBottom="$5"
+              <Dialog.Title fontSize={20} fontWeight="700">
+                {editingTask ? "Edit Task" : "New Task"}
+              </Dialog.Title>
+              <VisuallyHidden>
+                <Dialog.Description>Create or edit a task</Dialog.Description>
+              </VisuallyHidden>
+              <TScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
+                contentContainerStyle={{ paddingBottom: 32 }}
               >
-                <Text fontSize={20} fontWeight="700">
-                  {editingTask ? "Edit Task" : "New Task"}
-                </Text>
-                <Button
-                  unstyled
-                  onPress={() => {
-                    setFormSheetOpen(false);
-                    resetForm();
-                  }}
-                  padding="$1"
+                {/* Title */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
                 >
-                  <MaterialIcons name="close" size={24} color={themedSubText} />
-                </Button>
-              </XStack>
-
-              {/* Title */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Title
-              </Text>
-              <Input
-                value={formTitle}
-                onChangeText={setFormTitle}
-                placeholder="What needs to be done?"
-                borderRadius={14}
-                height={48}
-                marginBottom="$4"
-                fontSize={15}
-              />
-
-              {/* Description */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Description
-              </Text>
-              <TextArea
-                value={formDescription}
-                onChangeText={setFormDescription}
-                placeholder="Add more details..."
-                borderRadius={14}
-                marginBottom="$4"
-                numberOfLines={3}
-                minHeight={80}
-                fontSize={15}
-                textAlignVertical="top"
-              />
-
-              {/* Status */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Status
-              </Text>
-              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                {ALL_STATUSES.map((s) => {
-                  const config = STATUS_CONFIG[s];
-                  const isSelected = formStatus === s;
-                  return (
-                    <Button
-                      key={s}
-                      size="$3"
-                      borderRadius={12}
-                      borderWidth={1}
-                      borderColor={isSelected ? config.color : "$borderColor"}
-                      backgroundColor={
-                        isSelected ? config.color + "20" : "$backgroundFocus"
-                      }
-                      pressStyle={{ opacity: 0.8 }}
-                      onPress={() => setFormStatus(s)}
-                      icon={
-                        <MaterialIcons
-                          name={config.icon as any}
-                          size={14}
-                          color={isSelected ? config.color : themedSubText}
-                        />
-                      }
-                    >
-                      <Text
-                        fontSize={13}
-                        fontWeight="500"
-                        color={isSelected ? config.color : "$color"}
-                      >
-                        {config.label}
-                      </Text>
-                    </Button>
-                  );
-                })}
-              </XStack>
-
-              {/* Priority */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Priority
-              </Text>
-              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                {ALL_PRIORITIES.map((p) => {
-                  const config = PRIORITY_CONFIG[p];
-                  const isSelected = formPriority === p;
-                  return (
-                    <Button
-                      key={p}
-                      size="$3"
-                      borderRadius={12}
-                      borderWidth={1}
-                      borderColor={isSelected ? config.color : "$borderColor"}
-                      backgroundColor={
-                        isSelected ? config.bgColor : "$backgroundFocus"
-                      }
-                      pressStyle={{ opacity: 0.8 }}
-                      onPress={() => setFormPriority(p)}
-                      icon={
-                        <View
-                          style={[
-                            styles.priorityDot,
-                            { backgroundColor: config.color },
-                          ]}
-                        />
-                      }
-                    >
-                      <Text
-                        fontSize={13}
-                        fontWeight="500"
-                        color={isSelected ? config.color : "$color"}
-                      >
-                        {config.label}
-                      </Text>
-                    </Button>
-                  );
-                })}
-              </XStack>
-
-              {/* Tag */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Tag
-              </Text>
-              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                {ALL_TAGS.map((t) => {
-                  const config = TAG_CONFIG[t];
-                  const isSelected = formTag === t;
-                  return (
-                    <Button
-                      key={t}
-                      size="$3"
-                      borderRadius={12}
-                      borderWidth={1}
-                      borderColor={isSelected ? config.color : "$borderColor"}
-                      backgroundColor={
-                        isSelected ? config.bgColor : "$backgroundFocus"
-                      }
-                      pressStyle={{ opacity: 0.8 }}
-                      onPress={() => setFormTag(t)}
-                      icon={
-                        <MaterialIcons
-                          name={config.icon as any}
-                          size={13}
-                          color={isSelected ? config.color : themedSubText}
-                        />
-                      }
-                    >
-                      <Text
-                        fontSize={12}
-                        fontWeight="500"
-                        color={isSelected ? config.color : "$color"}
-                      >
-                        {config.label}
-                      </Text>
-                    </Button>
-                  );
-                })}
-              </XStack>
-
-              {/* Due Date */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Due Date
-              </Text>
-              <DatePicker
-                value={formDueDate}
-                onChange={setFormDueDate}
-                placeholder="Select due date"
-                isDarkMode={isDarkMode}
-              />
-
-              {/* Note */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Note (optional)
-              </Text>
-              <TextArea
-                value={formNote}
-                onChangeText={setFormNote}
-                placeholder="Additional notes..."
-                borderRadius={14}
-                marginBottom="$4"
-                numberOfLines={3}
-                minHeight={80}
-                fontSize={15}
-                textAlignVertical="top"
-              />
-
-              {/* Save */}
-              <Button
-                backgroundColor={Brand.primary}
-                color="#FFFFFF"
-                borderRadius={16}
-                height={52}
-                pressStyle={{ opacity: 0.85 }}
-                marginTop="$2"
-                marginBottom="$2"
-                onPress={handleSave}
-              >
-                <Text color="#FFFFFF" fontSize={15} fontWeight="700">
-                  {editingTask ? "Update Task" : "Create Task"}
+                  Title
                 </Text>
-              </Button>
-            </TScrollView>
-          </Sheet.Frame>
-        </Sheet>
+                <Input
+                  value={formTitle}
+                  onChangeText={setFormTitle}
+                  placeholder="What needs to be done?"
+                  borderRadius={14}
+                  height={48}
+                  marginBottom="$4"
+                  fontSize={15}
+                />
+
+                {/* Description */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Description
+                </Text>
+                <TextArea
+                  value={formDescription}
+                  onChangeText={setFormDescription}
+                  placeholder="Add more details..."
+                  borderRadius={14}
+                  marginBottom="$4"
+                  numberOfLines={3}
+                  minHeight={80}
+                  fontSize={15}
+                  textAlignVertical="top"
+                />
+
+                {/* Status */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Status
+                </Text>
+                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                  {ALL_STATUSES.map((s) => {
+                    const config = STATUS_CONFIG[s];
+                    const isSelected = formStatus === s;
+                    return (
+                      <Button
+                        key={s}
+                        size="$3"
+                        borderRadius={12}
+                        borderWidth={1}
+                        borderColor={isSelected ? config.color : "$borderColor"}
+                        backgroundColor={
+                          isSelected ? config.color + "20" : "$backgroundFocus"
+                        }
+                        pressStyle={{ opacity: 0.8 }}
+                        onPress={() => setFormStatus(s)}
+                        icon={
+                          <MaterialIcons
+                            name={config.icon as any}
+                            size={14}
+                            color={isSelected ? config.color : themedSubText}
+                          />
+                        }
+                      >
+                        <Text
+                          fontSize={13}
+                          fontWeight="500"
+                          color={isSelected ? config.color : "$color"}
+                        >
+                          {config.label}
+                        </Text>
+                      </Button>
+                    );
+                  })}
+                </XStack>
+
+                {/* Priority */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Priority
+                </Text>
+                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                  {ALL_PRIORITIES.map((p) => {
+                    const config = PRIORITY_CONFIG[p];
+                    const isSelected = formPriority === p;
+                    return (
+                      <Button
+                        key={p}
+                        size="$3"
+                        borderRadius={12}
+                        borderWidth={1}
+                        borderColor={isSelected ? config.color : "$borderColor"}
+                        backgroundColor={
+                          isSelected ? config.bgColor : "$backgroundFocus"
+                        }
+                        pressStyle={{ opacity: 0.8 }}
+                        onPress={() => setFormPriority(p)}
+                        icon={
+                          <View
+                            style={[
+                              styles.priorityDot,
+                              { backgroundColor: config.color },
+                            ]}
+                          />
+                        }
+                      >
+                        <Text
+                          fontSize={13}
+                          fontWeight="500"
+                          color={isSelected ? config.color : "$color"}
+                        >
+                          {config.label}
+                        </Text>
+                      </Button>
+                    );
+                  })}
+                </XStack>
+
+                {/* Tag */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Tag
+                </Text>
+                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                  {ALL_TAGS.map((t) => {
+                    const config = TAG_CONFIG[t];
+                    const isSelected = formTag === t;
+                    return (
+                      <Button
+                        key={t}
+                        size="$3"
+                        borderRadius={12}
+                        borderWidth={1}
+                        borderColor={isSelected ? config.color : "$borderColor"}
+                        backgroundColor={
+                          isSelected ? config.bgColor : "$backgroundFocus"
+                        }
+                        pressStyle={{ opacity: 0.8 }}
+                        onPress={() => setFormTag(t)}
+                        icon={
+                          <MaterialIcons
+                            name={config.icon as any}
+                            size={13}
+                            color={isSelected ? config.color : themedSubText}
+                          />
+                        }
+                      >
+                        <Text
+                          fontSize={12}
+                          fontWeight="500"
+                          color={isSelected ? config.color : "$color"}
+                        >
+                          {config.label}
+                        </Text>
+                      </Button>
+                    );
+                  })}
+                </XStack>
+
+                {/* Due Date */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Due Date
+                </Text>
+                <DatePicker
+                  value={formDueDate}
+                  onChange={setFormDueDate}
+                  placeholder="Select due date"
+                  isDarkMode={isDarkMode}
+                />
+
+                {/* Note */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Note (optional)
+                </Text>
+                <TextArea
+                  value={formNote}
+                  onChangeText={setFormNote}
+                  placeholder="Additional notes..."
+                  borderRadius={14}
+                  marginBottom="$4"
+                  numberOfLines={3}
+                  minHeight={80}
+                  fontSize={15}
+                  textAlignVertical="top"
+                />
+
+                {/* Save */}
+                <Button
+                  backgroundColor={accentColor}
+                  color={accentOnColor}
+                  borderRadius={16}
+                  height={52}
+                  pressStyle={{ opacity: 0.85 }}
+                  marginTop="$2"
+                  marginBottom="$2"
+                  onPress={handleSave}
+                >
+                  <Text color={accentOnColor} fontSize={15} fontWeight="700">
+                    {editingTask ? "Update Task" : "Create Task"}
+                  </Text>
+                </Button>
+              </TScrollView>
+              <Unspaced>
+                <Dialog.Close asChild>
+                  <Button
+                    unstyled
+                    position="absolute"
+                    right="$3"
+                    top="$3"
+                    width={32}
+                    height={32}
+                    borderRadius={16}
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor={themedCardBg}
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => {
+                      setFormSheetOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    <MaterialIcons name="close" size={18} color={themedSubText} />
+                  </Button>
+                </Dialog.Close>
+              </Unspaced>
+            </Dialog.Content>
+            </Dialog.FocusScope>
+          </Dialog.Portal>
+        </Dialog>
 
         {/* ═══════════════════════════════════════════════════════ */}
-        {/* FILTER / SORT SHEET                                    */}
+        {/* FILTER / SORT DIALOG                                    */}
         {/* ═══════════════════════════════════════════════════════ */}
-        <Sheet
-          open={filterSheetOpen}
-          onOpenChange={setFilterSheetOpen}
-          dismissOnSnapToBottom
-          snapPointsMode="percent"
-          snapPoints={[85]}
-          modal
-          animation="medium"
-          zIndex={100_000}
-        >
-          <Sheet.Overlay
-            animation="lazy"
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
-          <Sheet.Handle />
-          <Sheet.Frame
-            borderTopLeftRadius={28}
-            borderTopRightRadius={28}
-            paddingHorizontal="$5"
-            paddingTop="$4"
-            paddingBottom="$6"
-          >
-            <TScrollView showsVerticalScrollIndicator={false} bounces={false}>
-              {/* Header */}
-              <XStack
-                justifyContent="space-between"
-                alignItems="center"
-                marginBottom="$5"
-              >
-                <Text fontSize={20} fontWeight="700">
-                  Filters & Sort
+        <Dialog open={filterSheetOpen} onOpenChange={setFilterSheetOpen} modal>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              bg="$background"
+              opacity={0.5}
+              animateOnly={["transform", "opacity"]}
+              transition={[
+                "quicker",
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
+            />
+            <Dialog.FocusScope focusOnIdle>
+            <Dialog.Content
+              transition={[
+                "quicker",
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+              enterStyle={{ x: 0, y: 20, opacity: 0 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              width="92%"
+              maxHeight="85%"
+              borderRadius={28}
+              paddingHorizontal="$5"
+              paddingTop="$4"
+              paddingBottom="$6"
+              gap="$4"
+            >
+              <Dialog.Title fontSize={20} fontWeight="700">
+                Filters & Sort
+              </Dialog.Title>
+              <VisuallyHidden>
+                <Dialog.Description>Filter and sort tasks</Dialog.Description>
+              </VisuallyHidden>
+              <TScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                {/* Sort By */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
+                >
+                  Sort By
                 </Text>
-                <Button
-                  unstyled
-                  onPress={() => setFilterSheetOpen(false)}
-                  padding="$1"
-                >
-                  <MaterialIcons name="close" size={24} color={themedSubText} />
-                </Button>
-              </XStack>
-
-              {/* Sort By */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Sort By
-              </Text>
-              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                {SORT_OPTIONS.map((opt) => {
-                  const isSelected = filters.sortBy === opt.value;
-                  return (
-                    <Button
-                      key={opt.value}
-                      size="$3"
-                      borderRadius={12}
-                      borderWidth={1}
-                      borderColor={isSelected ? Brand.primary : "$borderColor"}
-                      backgroundColor={
-                        isSelected ? Brand.primary : "$backgroundFocus"
-                      }
-                      pressStyle={{ opacity: 0.8 }}
-                      onPress={() => setSortBy(opt.value)}
-                    >
-                      <Text
-                        fontSize={13}
-                        fontWeight={isSelected ? "700" : "500"}
-                        color={isSelected ? "#FFFFFF" : "$color"}
+                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                  {SORT_OPTIONS.map((opt) => {
+                    const isSelected = filters.sortBy === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        size="$3"
+                        borderRadius={12}
+                        borderWidth={1}
+                        borderColor={isSelected ? accentColor : "$borderColor"}
+                        backgroundColor={
+                          isSelected ? accentColor : "$backgroundFocus"
+                        }
+                        pressStyle={{ opacity: 0.8 }}
+                        onPress={() => setSortBy(opt.value)}
                       >
-                        {opt.label}
-                      </Text>
-                    </Button>
-                  );
-                })}
-              </XStack>
+                        <Text
+                          fontSize={13}
+                          fontWeight={isSelected ? "700" : "500"}
+                          color={isSelected ? accentOnColor : "$color"}
+                        >
+                          {opt.label}
+                        </Text>
+                      </Button>
+                    );
+                  })}
+                </XStack>
 
-              {/* Priority Filter */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Priority
-              </Text>
-              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                <Button
-                  size="$3"
-                  borderRadius={12}
-                  borderWidth={1}
-                  borderColor={
-                    filters.priority === "all" ? Brand.primary : "$borderColor"
-                  }
-                  backgroundColor={
-                    filters.priority === "all"
-                      ? Brand.primary
-                      : "$backgroundFocus"
-                  }
-                  pressStyle={{ opacity: 0.8 }}
-                  onPress={() => setPriorityFilter("all")}
+                {/* Priority Filter */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
                 >
-                  <Text
-                    fontSize={13}
-                    fontWeight="500"
-                    color={filters.priority === "all" ? "#FFFFFF" : "$color"}
+                  Priority
+                </Text>
+                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                  <Button
+                    size="$3"
+                    borderRadius={12}
+                    borderWidth={1}
+                    borderColor={
+                      filters.priority === "all" ? accentColor : "$borderColor"
+                    }
+                    backgroundColor={
+                      filters.priority === "all"
+                        ? accentColor
+                        : "$backgroundFocus"
+                    }
+                    pressStyle={{ opacity: 0.8 }}
+                    onPress={() => setPriorityFilter("all")}
                   >
-                    All
-                  </Text>
-                </Button>
-                {ALL_PRIORITIES.map((p) => {
-                  const config = PRIORITY_CONFIG[p];
-                  const isSelected = filters.priority === p;
-                  return (
-                    <Button
-                      key={p}
-                      size="$3"
-                      borderRadius={12}
-                      borderWidth={1}
-                      borderColor={isSelected ? config.color : "$borderColor"}
-                      backgroundColor={
-                        isSelected ? config.bgColor : "$backgroundFocus"
-                      }
-                      pressStyle={{ opacity: 0.8 }}
-                      onPress={() => setPriorityFilter(p)}
-                      icon={
-                        <View
-                          style={[
-                            styles.priorityDot,
-                            { backgroundColor: config.color },
-                          ]}
-                        />
+                    <Text
+                      fontSize={13}
+                      fontWeight="500"
+                      color={
+                        filters.priority === "all" ? accentOnColor : "$color"
                       }
                     >
-                      <Text
-                        fontSize={13}
-                        fontWeight="500"
-                        color={isSelected ? config.color : "$color"}
+                      All
+                    </Text>
+                  </Button>
+                  {ALL_PRIORITIES.map((p) => {
+                    const config = PRIORITY_CONFIG[p];
+                    const isSelected = filters.priority === p;
+                    return (
+                      <Button
+                        key={p}
+                        size="$3"
+                        borderRadius={12}
+                        borderWidth={1}
+                        borderColor={isSelected ? config.color : "$borderColor"}
+                        backgroundColor={
+                          isSelected ? config.bgColor : "$backgroundFocus"
+                        }
+                        pressStyle={{ opacity: 0.8 }}
+                        onPress={() => setPriorityFilter(p)}
+                        icon={
+                          <View
+                            style={[
+                              styles.priorityDot,
+                              { backgroundColor: config.color },
+                            ]}
+                          />
+                        }
                       >
-                        {config.label}
-                      </Text>
-                    </Button>
-                  );
-                })}
-              </XStack>
+                        <Text
+                          fontSize={13}
+                          fontWeight="500"
+                          color={isSelected ? config.color : "$color"}
+                        >
+                          {config.label}
+                        </Text>
+                      </Button>
+                    );
+                  })}
+                </XStack>
 
-              {/* Tag Filter */}
-              <Text
-                fontSize={12}
-                letterSpacing={1}
-                textTransform="uppercase"
-                color="$colorSubtle"
-                marginBottom="$2"
-              >
-                Tag
-              </Text>
-              <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                <Button
-                  size="$3"
-                  borderRadius={12}
-                  borderWidth={1}
-                  borderColor={
-                    filters.tag === "all" ? Brand.primary : "$borderColor"
-                  }
-                  backgroundColor={
-                    filters.tag === "all" ? Brand.primary : "$backgroundFocus"
-                  }
-                  pressStyle={{ opacity: 0.8 }}
-                  onPress={() => setTagFilter("all")}
+                {/* Tag Filter */}
+                <Text
+                  fontSize={12}
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                  color="$colorSubtle"
+                  marginBottom="$2"
                 >
-                  <Text
-                    fontSize={13}
-                    fontWeight="500"
-                    color={filters.tag === "all" ? "#FFFFFF" : "$color"}
+                  Tag
+                </Text>
+                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                  <Button
+                    size="$3"
+                    borderRadius={12}
+                    borderWidth={1}
+                    borderColor={
+                      filters.tag === "all" ? accentColor : "$borderColor"
+                    }
+                    backgroundColor={
+                      filters.tag === "all" ? accentColor : "$backgroundFocus"
+                    }
+                    pressStyle={{ opacity: 0.8 }}
+                    onPress={() => setTagFilter("all")}
                   >
-                    All
-                  </Text>
-                </Button>
-                {ALL_TAGS.map((t) => {
-                  const config = TAG_CONFIG[t];
-                  const isSelected = filters.tag === t;
-                  return (
-                    <Button
-                      key={t}
-                      size="$3"
-                      borderRadius={12}
-                      borderWidth={1}
-                      borderColor={isSelected ? config.color : "$borderColor"}
-                      backgroundColor={
-                        isSelected ? config.bgColor : "$backgroundFocus"
-                      }
-                      pressStyle={{ opacity: 0.8 }}
-                      onPress={() => setTagFilter(t)}
-                      icon={
-                        <MaterialIcons
-                          name={config.icon as any}
-                          size={13}
-                          color={isSelected ? config.color : themedSubText}
-                        />
-                      }
+                    <Text
+                      fontSize={13}
+                      fontWeight="500"
+                      color={filters.tag === "all" ? accentOnColor : "$color"}
                     >
-                      <Text
-                        fontSize={12}
-                        fontWeight="500"
-                        color={isSelected ? config.color : "$color"}
+                      All
+                    </Text>
+                  </Button>
+                  {ALL_TAGS.map((t) => {
+                    const config = TAG_CONFIG[t];
+                    const isSelected = filters.tag === t;
+                    return (
+                      <Button
+                        key={t}
+                        size="$3"
+                        borderRadius={12}
+                        borderWidth={1}
+                        borderColor={isSelected ? config.color : "$borderColor"}
+                        backgroundColor={
+                          isSelected ? config.bgColor : "$backgroundFocus"
+                        }
+                        pressStyle={{ opacity: 0.8 }}
+                        onPress={() => setTagFilter(t)}
+                        icon={
+                          <MaterialIcons
+                            name={config.icon as any}
+                            size={13}
+                            color={isSelected ? config.color : themedSubText}
+                          />
+                        }
                       >
-                        {config.label}
-                      </Text>
-                    </Button>
-                  );
-                })}
-              </XStack>
+                        <Text
+                          fontSize={12}
+                          fontWeight="500"
+                          color={isSelected ? config.color : "$color"}
+                        >
+                          {config.label}
+                        </Text>
+                      </Button>
+                    );
+                  })}
+                </XStack>
 
-              {/* Actions */}
-              <XStack gap="$3" marginTop="$4">
-                <Button
-                  flex={1}
-                  height={48}
-                  borderRadius={14}
-                  borderWidth={1}
-                  borderColor="$borderColor"
-                  backgroundColor="$backgroundFocus"
-                  pressStyle={{ opacity: 0.85 }}
-                  onPress={() => {
-                    resetFilters();
-                    setFilterSheetOpen(false);
-                  }}
-                >
-                  <Text fontSize={14} fontWeight="600">
-                    Reset All
-                  </Text>
-                </Button>
-                <Button
-                  flex={1}
-                  height={48}
-                  borderRadius={14}
-                  backgroundColor={Brand.primary}
-                  pressStyle={{ opacity: 0.85 }}
-                  onPress={() => setFilterSheetOpen(false)}
-                >
-                  <Text fontSize={14} fontWeight="700" color="#FFFFFF">
-                    Apply
-                  </Text>
-                </Button>
-              </XStack>
-            </TScrollView>
-          </Sheet.Frame>
-        </Sheet>
+                {/* Actions */}
+                <XStack gap="$3" marginTop="$4">
+                  <Button
+                    flex={1}
+                    height={48}
+                    borderRadius={14}
+                    borderWidth={1}
+                    borderColor="$borderColor"
+                    backgroundColor="$backgroundFocus"
+                    pressStyle={{ opacity: 0.85 }}
+                    onPress={() => {
+                      resetFilters();
+                      setFilterSheetOpen(false);
+                    }}
+                  >
+                    <Text fontSize={14} fontWeight="600">
+                      Reset All
+                    </Text>
+                  </Button>
+                  <Button
+                    flex={1}
+                    height={48}
+                    borderRadius={14}
+                    backgroundColor={accentColor}
+                    pressStyle={{ opacity: 0.85 }}
+                    onPress={() => setFilterSheetOpen(false)}
+                  >
+                    <Text fontSize={14} fontWeight="700" color={accentOnColor}>
+                      Apply
+                    </Text>
+                  </Button>
+                </XStack>
+              </TScrollView>
+              <Unspaced>
+                <Dialog.Close asChild>
+                  <Button
+                    unstyled
+                    position="absolute"
+                    right="$3"
+                    top="$3"
+                    width={32}
+                    height={32}
+                    borderRadius={16}
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor={themedCardBg}
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => setFilterSheetOpen(false)}
+                  >
+                    <MaterialIcons name="close" size={18} color={themedSubText} />
+                  </Button>
+                </Dialog.Close>
+              </Unspaced>
+            </Dialog.Content>
+            </Dialog.FocusScope>
+          </Dialog.Portal>
+        </Dialog>
       </ThemedView>
     </SafeAreaView>
   );
@@ -2085,9 +2196,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
   },
-  tabActive: {
-    backgroundColor: Brand.primary,
-  },
+  tabActive: {},
   tabText: {
     fontSize: 13,
     fontWeight: "600",
@@ -2109,7 +2218,6 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     fontSize: 12,
     fontWeight: "600",
-    color: Brand.primary,
   },
   tabBadgeTextActive: {
     fontWeight: "700",

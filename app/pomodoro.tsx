@@ -29,6 +29,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAccentColor } from "@/hooks/use-accent-color";
 import {
   getRequiredSessions,
   usePomodoroStorage,
@@ -64,6 +65,7 @@ export default function PomodoroScreen() {
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
+  const { accentColor, accentOnColor } = useAccentColor();
 
   const { settings, getRecord, recordCompletedSession, updateSettings } =
     usePomodoroStorage();
@@ -278,7 +280,7 @@ export default function PomodoroScreen() {
       ? Palette.dark.textPrimary
       : phase === "short_break"
         ? Brand.successLight
-        : Brand.primaryLight
+        : accentColor
     : phase === "focus"
       ? "#111318"
       : phase === "short_break"
@@ -609,15 +611,15 @@ export default function PomodoroScreen() {
                   ))}
 
                   <Button
-                    backgroundColor={Brand.primary}
-                    color="#FFFFFF"
+                    backgroundColor={accentColor}
+                    color={accentOnColor}
                     borderRadius={16}
                     height={52}
                     pressStyle={{ opacity: 0.85 }}
                     marginTop="$2"
                     onPress={handleSaveSettings}
                   >
-                    <Text color="#FFFFFF" fontSize={15} fontWeight="700">
+                    <Text color={accentOnColor} fontSize={15} fontWeight="700">
                       Save Settings
                     </Text>
                   </Button>

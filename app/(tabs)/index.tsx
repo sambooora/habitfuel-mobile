@@ -1,13 +1,24 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Fonts, Palette, Shadows } from "@/constants/theme";
+import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { useAccentColor } from "@/hooks/use-accent-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  HABIT_COLOR_OPTIONS,
+  useHabitStorage,
+} from "@/hooks/use-habit-storage";
 import { useNickname } from "@/hooks/use-nickname";
 import { usePomodoroStorage } from "@/hooks/use-pomodoro-storage";
 import {
@@ -21,10 +32,51 @@ export default function HomeScreen() {
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
+  const { accentColor } = useAccentColor();
   const router = useRouter();
   const { getRecord } = usePomodoroStorage();
   const { nickname } = useNickname();
   const { tasks } = useTaskStorage();
+  const {
+    habits,
+    isCompletedToday,
+    toggleCompletion,
+    consistencyStreak,
+    consistencyPercent,
+    dailyRates,
+  } = useHabitStorage();
+
+  // ── Congratulations popup ─────────────────────────────
+  const [showCongrats, setShowCongrats] = useState(false);
+
+  // Computed BEFORE the ref so we can seed the ref with the real initial value.
+  // This prevents the popup from re-firing when HomeScreen re-mounts (e.g.
+  // after returning from the Pomodoro screen) while all habits are already done.
+  const allHabitsDoneToday = useMemo(() => {
+    if (habits.length === 0) return false;
+    return habits.every((h) => isCompletedToday(h.id));
+  }, [habits, isCompletedToday]);
+
+  const prevAllDoneRef = useRef(allHabitsDoneToday);
+
+  useEffect(() => {
+    if (allHabitsDoneToday && !prevAllDoneRef.current) {
+      setShowCongrats(true);
+    }
+    prevAllDoneRef.current = allHabitsDoneToday;
+  }, [allHabitsDoneToday]);
+
+  // Resolve habit colors for dark mode
+  const resolveHabitColors = (bg: string, iconColor: string) => {
+    const match = HABIT_COLOR_OPTIONS.find((c) => c.bg === bg);
+    if (match && isDarkMode) {
+      return { bg: match.bgDark, icon: match.iconDark };
+    }
+    if (match) {
+      return { bg: match.bg, icon: match.icon };
+    }
+    return { bg, icon: iconColor };
+  };
 
   // Filter high + urgent tasks that are not done, sorted urgent first then high
   const focusTasks = useMemo(() => {
@@ -43,33 +95,6 @@ export default function HomeScreen() {
       })
       .slice(0, 5);
   }, [tasks]);
-
-  const habits = [
-    {
-      label: "Water",
-      icon: "water-drop",
-      background: isDarkMode ? "#1A2E42" : "#E8F3FF",
-      iconColor: isDarkMode ? "#5BA8F5" : "#2B7BD4",
-    },
-    {
-      label: "Mind",
-      icon: "self-improvement",
-      background: isDarkMode ? "#2A2140" : "#F1EDFF",
-      iconColor: isDarkMode ? "#A78BF5" : "#6B4DC7",
-    },
-    {
-      label: "Read",
-      icon: "menu-book",
-      background: isDarkMode ? "#3A2A1A" : "#FFF1E7",
-      iconColor: isDarkMode ? "#E8A050" : "#C47020",
-    },
-    {
-      label: "Gym",
-      icon: "fitness-center",
-      background: isDarkMode ? "#1A3028" : "#EAF8F1",
-      iconColor: isDarkMode ? "#50C090" : "#1A8A55",
-    },
-  ];
 
   const today = new Date();
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -97,6 +122,89 @@ export default function HomeScreen() {
       edges={["top", "left", "right"]}
       style={{ flex: 1, backgroundColor: t.pageBg }}
     >
+      {/* ── Congratulations Modal ──────────────────────── */}
+      <Modal
+        visible={showCongrats}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCongrats(false)}
+      >
+        <View style={styles.congratsOverlay}>
+          <View
+            style={[
+              styles.congratsCard,
+              { backgroundColor: t.cardBg },
+              shadow.card,
+            ]}
+          >
+            {/* Trophy icon */}
+            <View
+              style={[
+                styles.congratsTrophyWrap,
+                {
+                  backgroundColor: isDarkMode ? "#332C08" : "#FFF8E1",
+                },
+              ]}
+            >
+              <MaterialIcons name="emoji-events" size={48} color="#D4B534" />
+            </View>
+
+            <ThemedText
+              style={styles.congratsTitle}
+              lightColor={Palette.light.textPrimary}
+              darkColor={Palette.dark.textPrimary}
+            >
+              Congratulations! 🎉
+            </ThemedText>
+
+            <ThemedText
+              style={styles.congratsBody}
+              lightColor={Palette.light.textSecondary}
+              darkColor={Palette.dark.textSecondary}
+            >
+              {
+                "You've completed all your habits for today! Keep up the amazing work — consistency is the key to greatness! 🔥"
+              }
+            </ThemedText>
+
+            {/* Streak badge */}
+            {consistencyStreak > 0 && (
+              <View
+                style={[
+                  styles.congratsStreakBadge,
+                  {
+                    backgroundColor: isDarkMode
+                      ? Brand.successBgDark
+                      : Brand.successBg,
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name="local-fire-department"
+                  size={16}
+                  color={Brand.success}
+                />
+                <ThemedText
+                  style={[styles.congratsStreakText, { color: Brand.success }]}
+                >
+                  {consistencyStreak}-day streak!
+                </ThemedText>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.congratsBtn, { backgroundColor: accentColor }]}
+              activeOpacity={0.8}
+              onPress={() => setShowCongrats(false)}
+            >
+              <ThemedText style={styles.congratsBtnText}>
+                Awesome! 🚀
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ThemedView
         style={styles.container}
         lightColor={Palette.light.pageBg}
@@ -142,7 +250,7 @@ export default function HomeScreen() {
               </ThemedText>
             </View>
 
-            {/* Score + mini chart side by side : Score mengitung persentase dari progress 69 hari */}
+            {/* Score + mini chart side by side : Score menghitung persentase dari progress 69 hari */}
             <View style={styles.scoreRow}>
               <View style={styles.scoreLeft}>
                 <ThemedText
@@ -152,30 +260,35 @@ export default function HomeScreen() {
                   numberOfLines={1}
                   adjustsFontSizeToFit
                 >
-                  85%
+                  {consistencyPercent}%
                 </ThemedText>
                 <ThemedText
                   style={styles.subtleText}
                   lightColor={Palette.light.textSubtle}
                   darkColor={Palette.dark.textSubtle}
                 >
-                  5-day streak 🔥
+                  {consistencyStreak > 0
+                    ? `${consistencyStreak}-day streak 🔥`
+                    : "No streak yet"}
                 </ThemedText>
               </View>
               <View style={styles.chart}>
-                {[16, 22, 28, 20].map((h, i) => (
+                {dailyRates.map((rate, i) => (
                   <View
                     key={i}
                     style={[
                       styles.chartBar,
-                      { height: h, backgroundColor: t.chartBarPrimary },
+                      {
+                        height: Math.max(4, Math.round(rate * 32)),
+                        backgroundColor: t.chartBarPrimary,
+                      },
                     ]}
                   />
                 ))}
               </View>
             </View>
 
-            {/* Progress bar: ini menghitung dari progress 69 hari steaks jika habit ada yg tidak dilakukan akan mengulang ke 0 */}
+            {/* Progress bar: progress 69 hari — resets jika 1 habit saja tidak dilakukan */}
             <View
               style={[
                 styles.progressTrack,
@@ -185,7 +298,10 @@ export default function HomeScreen() {
               <View
                 style={[
                   styles.progressFill,
-                  { backgroundColor: t.progressFill },
+                  {
+                    backgroundColor: t.progressFill,
+                    width: `${consistencyPercent}%`,
+                  },
                 ]}
               />
             </View>
@@ -243,7 +359,7 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          {/* ── Daily Habits : akan menjadi button tab able untuk counter habit hariannya. max 4 dalam 1 row atau bisa geser geser */}
+          {/* ── Daily Habits ───────────────────────────────── */}
           <View style={styles.sectionHeader}>
             <ThemedText
               style={styles.sectionTitle}
@@ -252,43 +368,96 @@ export default function HomeScreen() {
             >
               Daily Habits
             </ThemedText>
-            <ThemedText
-              style={styles.sectionLink}
-              lightColor={Palette.light.textSubtle}
-              darkColor={Palette.dark.textSubtle}
+            <TouchableOpacity
+              onPress={() => router.push("/habits")}
+              activeOpacity={0.6}
             >
-              View All
-            </ThemedText>
+              <ThemedText
+                style={styles.sectionLink}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                View All
+              </ThemedText>
+            </TouchableOpacity>
           </View>
 
           <View
             style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
           >
-            <View style={styles.habitRow}>
-              {habits.map((habit) => (
-                <View key={habit.label} style={styles.habitItem}>
-                  <View
-                    style={[
-                      styles.habitIcon,
-                      { backgroundColor: habit.background },
-                    ]}
+            {/* Locked banner — shown once all habits are done for the day */}
+            {allHabitsDoneToday && (
+              <View style={styles.habitLockedRow}>
+                <MaterialIcons
+                  name="lock"
+                  size={12}
+                  color={
+                    isDarkMode
+                      ? Palette.dark.textSubtle
+                      : Palette.light.textSubtle
+                  }
+                />
+                <ThemedText
+                  style={styles.habitLockedText}
+                  lightColor={Palette.light.textSubtle}
+                  darkColor={Palette.dark.textSubtle}
+                >
+                  All done for today · resets tomorrow
+                </ThemedText>
+              </View>
+            )}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[
+                styles.habitScroll,
+                allHabitsDoneToday && { opacity: 0.6 },
+              ]}
+            >
+              {habits.map((habit) => {
+                const done = isCompletedToday(habit.id);
+                const colors = resolveHabitColors(
+                  habit.background,
+                  habit.iconColor,
+                );
+                return (
+                  <TouchableOpacity
+                    key={habit.id}
+                    style={styles.habitItem}
+                    activeOpacity={done ? 1 : 0.7}
+                    disabled={done}
+                    onPress={() => toggleCompletion(habit.id)}
                   >
-                    <MaterialIcons
-                      name={habit.icon as any}
-                      size={18}
-                      color={habit.iconColor}
-                    />
-                  </View>
-                  <ThemedText
-                    style={styles.habitLabel}
-                    lightColor={Palette.light.textSecondary}
-                    darkColor={Palette.dark.textSecondary}
-                  >
-                    {habit.label}
-                  </ThemedText>
-                </View>
-              ))}
-            </View>
+                    <View
+                      style={[
+                        styles.habitIcon,
+                        { backgroundColor: colors.bg },
+                        done && styles.habitIconDone,
+                      ]}
+                    >
+                      {done ? (
+                        <MaterialIcons name="check" size={20} color="#0A8F5A" />
+                      ) : (
+                        <MaterialIcons
+                          name={habit.icon as any}
+                          size={18}
+                          color={colors.icon}
+                        />
+                      )}
+                    </View>
+                    <ThemedText
+                      style={[styles.habitLabel, done && styles.habitLabelDone]}
+                      lightColor={
+                        done ? "#0A8F5A" : Palette.light.textSecondary
+                      }
+                      darkColor={done ? "#3DBB7A" : Palette.dark.textSecondary}
+                    >
+                      {habit.label}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
 
           {/* ── Focus Tasks ────────────────────────────────── */}
@@ -467,6 +636,68 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ── Congratulations Modal ──────────────────────────────
+  congratsOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  congratsCard: {
+    borderRadius: 24,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+    paddingBottom: 28,
+    alignItems: "center",
+    width: "100%",
+    gap: 14,
+  },
+  congratsTrophyWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  congratsTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    letterSpacing: 0.2,
+  },
+  congratsBody: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  congratsStreakBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  congratsStreakText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  congratsBtn: {
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    marginTop: 6,
+  },
+  congratsBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
   container: {
     flex: 1,
   },
@@ -554,9 +785,9 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   progressFill: {
-    width: "70%",
     height: 6,
     borderRadius: 99,
+    minWidth: 6,
   },
   subtleText: {
     fontSize: 12,
@@ -609,13 +840,24 @@ const styles = StyleSheet.create({
   },
 
   // ── Habits ──────────────────────────────────────────────────
-  habitRow: {
+  habitLockedRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 5,
+  },
+  habitLockedText: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  habitScroll: {
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 4,
   },
   habitItem: {
     alignItems: "center",
-    gap: 3,
+    gap: 4,
+    minWidth: 56,
   },
   habitIcon: {
     width: 52,
@@ -624,8 +866,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  habitIconDone: {
+    borderWidth: 2,
+    borderColor: "#0A8F5A",
+  },
   habitLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  habitLabelDone: {
+    fontWeight: "700",
   },
 
   // ── Count Badge ─────────────────────────────────────────────

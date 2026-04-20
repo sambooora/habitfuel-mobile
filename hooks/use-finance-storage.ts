@@ -194,7 +194,19 @@ export function computeStats(
 }
 
 export function formatCurrency(amount: number): string {
-  return "$" + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+export function formatCompact(amount: number): string {
+  if (amount >= 1_000_000) {
+    const val = amount / 1_000_000;
+    return (Number.isInteger(val) ? val.toFixed(0) : val.toFixed(1)) + "M";
+  }
+  if (amount >= 1_000) {
+    const val = amount / 1_000;
+    return (Number.isInteger(val) ? val.toFixed(0) : val.toFixed(1)) + "K";
+  }
+  return amount.toFixed(0);
 }
 
 export function formatTransactionDate(dateStr: string): string {
