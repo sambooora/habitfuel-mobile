@@ -647,138 +647,160 @@ export default function FinanceScreen() {
               >
                 <VisuallyHidden>
                   <Dialog.Title>Transaction Detail</Dialog.Title>
-                  <Dialog.Description>View transaction details</Dialog.Description>
+                  <Dialog.Description>
+                    View transaction details
+                  </Dialog.Description>
                 </VisuallyHidden>
                 {detailTransaction && (
-                  <TScrollView showsVerticalScrollIndicator={false} bounces={false}>
-                  {/* Header */}
-                  <YStack alignItems="center" marginBottom="$5" gap="$2">
-                    <YStack
-                      width={56}
-                      height={56}
-                      borderRadius={20}
-                      alignItems="center"
-                      justifyContent="center"
-                      backgroundColor={
-                        detailTransaction.type === "income"
-                          ? t.transactionIncomeBg
-                          : t.transactionExpenseBg
-                      }
-                      marginBottom="$2"
-                    >
-                      <MaterialIcons
-                        name={
-                          (CATEGORY_CONFIG[detailTransaction.category]?.icon ||
-                            "more-horiz") as any
+                  <TScrollView
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                  >
+                    {/* Header */}
+                    <YStack alignItems="center" marginBottom="$5" gap="$2">
+                      <YStack
+                        width={56}
+                        height={56}
+                        borderRadius={20}
+                        alignItems="center"
+                        justifyContent="center"
+                        backgroundColor={
+                          detailTransaction.type === "income"
+                            ? t.transactionIncomeBg
+                            : t.transactionExpenseBg
                         }
-                        size={28}
+                        marginBottom="$2"
+                      >
+                        <MaterialIcons
+                          name={
+                            (CATEGORY_CONFIG[detailTransaction.category]
+                              ?.icon || "more-horiz") as any
+                          }
+                          size={28}
+                          color={
+                            detailTransaction.type === "income"
+                              ? t.transactionIncomeIcon
+                              : t.transactionExpenseIcon
+                          }
+                        />
+                      </YStack>
+                      <Text fontSize={20} fontWeight="700" textAlign="center">
+                        {detailTransaction.title}
+                      </Text>
+                      <Text
+                        fontSize={28}
+                        fontWeight="800"
                         color={
                           detailTransaction.type === "income"
-                            ? t.transactionIncomeIcon
-                            : t.transactionExpenseIcon
+                            ? Brand.success
+                            : Brand.danger
                         }
-                      />
+                      >
+                        {detailTransaction.type === "income" ? "+" : "-"}
+                        {formatCurrency(detailTransaction.amount)}
+                      </Text>
                     </YStack>
-                    <Text fontSize={20} fontWeight="700" textAlign="center">
-                      {detailTransaction.title}
-                    </Text>
-                    <Text
-                      fontSize={28}
-                      fontWeight="800"
-                      color={
-                        detailTransaction.type === "income"
-                          ? Brand.success
-                          : Brand.danger
-                      }
-                    >
-                      {detailTransaction.type === "income" ? "+" : "-"}
-                      {formatCurrency(detailTransaction.amount)}
-                    </Text>
-                  </YStack>
-  
-                  <Separator marginBottom="$4" />
-  
-                  {/* Info Rows */}
-                  <YStack gap="$3" marginBottom="$5">
-                    <XStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize={13} color="$colorSubtle">
-                        Type
-                      </Text>
-                      <Text fontSize={14} fontWeight="600">
-                        {detailTransaction.type === "income"
-                          ? "Income"
-                          : "Expense"}
-                      </Text>
-                    </XStack>
-                    <XStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize={13} color="$colorSubtle">
-                        Category
-                      </Text>
-                      <Text fontSize={14} fontWeight="600">
-                        {CATEGORY_CONFIG[detailTransaction.category]?.label ||
-                          "Other"}
-                      </Text>
-                    </XStack>
-                    <XStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize={13} color="$colorSubtle">
-                        Date
-                      </Text>
-                      <Text fontSize={14} fontWeight="600">
-                        {formatTransactionDate(detailTransaction.date)}
-                      </Text>
-                    </XStack>
-                    {detailTransaction.note ? (
+
+                    <Separator marginBottom="$4" />
+
+                    {/* Info Rows */}
+                    <YStack gap="$3" marginBottom="$5">
                       <XStack
                         justifyContent="space-between"
-                        alignItems="flex-start"
+                        alignItems="center"
                       >
                         <Text fontSize={13} color="$colorSubtle">
-                          Note
+                          Type
                         </Text>
-                        <Text
-                          fontSize={14}
-                          fontWeight="600"
-                          flex={1}
-                          textAlign="right"
-                          marginLeft="$4"
-                        >
-                          {detailTransaction.note}
+                        <Text fontSize={14} fontWeight="600">
+                          {detailTransaction.type === "income"
+                            ? "Income"
+                            : "Expense"}
                         </Text>
                       </XStack>
-                    ) : null}
-                  </YStack>
-  
-                  {/* Actions */}
-                  <XStack gap="$3" marginBottom="$3">
-                    <Button
-                      flex={1}
-                      backgroundColor={Brand.primary}
-                      color="#FFFFFF"
-                      borderRadius={14}
-                      height={48}
-                      pressStyle={{ opacity: 0.85 }}
-                      icon={
-                        <MaterialIcons name="edit" size={18} color="#FFFFFF" />
-                      }
-                      onPress={() => openEditSheet(detailTransaction)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      flex={1}
-                      backgroundColor={Brand.danger}
-                      color="#FFFFFF"
-                      borderRadius={14}
-                      height={48}
-                      pressStyle={{ opacity: 0.85 }}
-                      icon={
-                        <MaterialIcons name="delete" size={18} color="#FFFFFF" />
-                      }
-                      onPress={() => handleDelete(detailTransaction.id)}
-                    >
-                      Delete
-                    </Button>
-                  </XStack>
+                      <XStack
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Text fontSize={13} color="$colorSubtle">
+                          Category
+                        </Text>
+                        <Text fontSize={14} fontWeight="600">
+                          {CATEGORY_CONFIG[detailTransaction.category]?.label ||
+                            "Other"}
+                        </Text>
+                      </XStack>
+                      <XStack
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Text fontSize={13} color="$colorSubtle">
+                          Date
+                        </Text>
+                        <Text fontSize={14} fontWeight="600">
+                          {formatTransactionDate(detailTransaction.date)}
+                        </Text>
+                      </XStack>
+                      {detailTransaction.note ? (
+                        <XStack
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                        >
+                          <Text fontSize={13} color="$colorSubtle">
+                            Note
+                          </Text>
+                          <Text
+                            fontSize={14}
+                            fontWeight="600"
+                            flex={1}
+                            textAlign="right"
+                            marginLeft="$4"
+                          >
+                            {detailTransaction.note}
+                          </Text>
+                        </XStack>
+                      ) : null}
+                    </YStack>
+
+                    {/* Actions */}
+                    <XStack gap="$3" marginBottom="$3">
+                      <Button
+                        flex={1}
+                        backgroundColor={Brand.primary}
+                        color="#FFFFFF"
+                        borderRadius={14}
+                        height={48}
+                        pressStyle={{ opacity: 0.85 }}
+                        icon={
+                          <MaterialIcons
+                            name="edit"
+                            size={18}
+                            color="#FFFFFF"
+                          />
+                        }
+                        onPress={() => openEditSheet(detailTransaction)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        flex={1}
+                        backgroundColor={Brand.danger}
+                        color="#FFFFFF"
+                        borderRadius={14}
+                        height={48}
+                        pressStyle={{ opacity: 0.85 }}
+                        icon={
+                          <MaterialIcons
+                            name="delete"
+                            size={18}
+                            color="#FFFFFF"
+                          />
+                        }
+                        onPress={() => handleDelete(detailTransaction.id)}
+                      >
+                        Delete
+                      </Button>
+                    </XStack>
                   </TScrollView>
                 )}
                 <Unspaced>
@@ -796,7 +818,11 @@ export default function FinanceScreen() {
                       backgroundColor={themedBg}
                       pressStyle={{ opacity: 0.7 }}
                     >
-                      <MaterialIcons name="close" size={18} color={t.textSubtle} />
+                      <MaterialIcons
+                        name="close"
+                        size={18}
+                        color={t.textSubtle}
+                      />
                     </Button>
                   </Dialog.Close>
                 </Unspaced>
@@ -856,211 +882,220 @@ export default function FinanceScreen() {
                   {editingTransaction ? "Edit Transaction" : "Add Transaction"}
                 </Dialog.Title>
                 <VisuallyHidden>
-                  <Dialog.Description>Create or edit a transaction</Dialog.Description>
+                  <Dialog.Description>
+                    Create or edit a transaction
+                  </Dialog.Description>
                 </VisuallyHidden>
                 <TScrollView
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                   bounces={false}
+                  automaticallyAdjustKeyboardInsets
                   contentContainerStyle={{ paddingBottom: 32 }}
                 >
-                {/* Type Selector */}
-                <Text
-                  fontSize={12}
-                  letterSpacing={1}
-                  textTransform="uppercase"
-                  color="$colorSubtle"
-                  marginBottom="$2"
-                >
-                  Type
-                </Text>
-                <XStack gap="$3" marginBottom="$4">
-                  <Button
-                    flex={1}
-                    height={48}
-                    borderRadius={14}
-                    borderWidth={1}
-                    borderColor={
-                      formType === "income" ? Brand.success : "$borderColor"
-                    }
-                    backgroundColor={
-                      formType === "income" ? Brand.success : "transparent"
-                    }
-                    pressStyle={{ opacity: 0.85 }}
-                    onPress={() => setFormType("income")}
-                    icon={
-                      <MaterialIcons
-                        name="north-east"
-                        size={16}
-                        color={formType === "income" ? "#FFFFFF" : t.textSubtle}
-                      />
-                    }
+                  {/* Type Selector */}
+                  <Text
+                    fontSize={12}
+                    letterSpacing={1}
+                    textTransform="uppercase"
+                    color="$colorSubtle"
+                    marginBottom="$2"
                   >
-                    <Text
-                      fontWeight="600"
-                      fontSize={14}
-                      color={formType === "income" ? "#FFFFFF" : "$color"}
-                    >
-                      Income
-                    </Text>
-                  </Button>
-                  <Button
-                    flex={1}
-                    height={48}
-                    borderRadius={14}
-                    borderWidth={1}
-                    borderColor={
-                      formType === "expense" ? Brand.danger : "$borderColor"
-                    }
-                    backgroundColor={
-                      formType === "expense" ? Brand.danger : "transparent"
-                    }
-                    pressStyle={{ opacity: 0.85 }}
-                    onPress={() => setFormType("expense")}
-                    icon={
-                      <MaterialIcons
-                        name="south-east"
-                        size={16}
-                        color={formType === "expense" ? "#FFFFFF" : t.textSubtle}
-                      />
-                    }
-                  >
-                    <Text
-                      fontWeight="600"
-                      fontSize={14}
-                      color={formType === "expense" ? "#FFFFFF" : "$color"}
-                    >
-                      Expense
-                    </Text>
-                  </Button>
-                </XStack>
-  
-                {/* Title */}
-                <Text
-                  fontSize={12}
-                  letterSpacing={1}
-                  textTransform="uppercase"
-                  color="$colorSubtle"
-                  marginBottom="$2"
-                >
-                  Title
-                </Text>
-                <Input
-                  value={formTitle}
-                  onChangeText={setFormTitle}
-                  placeholder="e.g. Grocery Store"
-                  borderRadius={14}
-                  height={48}
-                  marginBottom="$4"
-                  fontSize={15}
-                />
-  
-                {/* Amount */}
-                <Text
-                  fontSize={12}
-                  letterSpacing={1}
-                  textTransform="uppercase"
-                  color="$colorSubtle"
-                  marginBottom="$2"
-                >
-                  Amount ($)
-                </Text>
-                <Input
-                  value={formAmount}
-                  onChangeText={setFormAmount}
-                  placeholder="0.00"
-                  keyboardType="decimal-pad"
-                  borderRadius={14}
-                  height={48}
-                  marginBottom="$4"
-                  fontSize={15}
-                />
-  
-                {/* Category */}
-                <Text
-                  fontSize={12}
-                  letterSpacing={1}
-                  textTransform="uppercase"
-                  color="$colorSubtle"
-                  marginBottom="$2"
-                >
-                  Category
-                </Text>
-                <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
-                  {CATEGORIES.map((cat) => {
-                    const isSelected = formCategory === cat;
-                    const config = CATEGORY_CONFIG[cat];
-                    return (
-                      <Button
-                        key={cat}
-                        size="$3"
-                        borderRadius={12}
-                        borderWidth={1}
-                        borderColor={isSelected ? Brand.primary : "$borderColor"}
-                        backgroundColor={
-                          isSelected ? Brand.primary : "$backgroundFocus"
-                        }
-                        pressStyle={{ opacity: 0.8 }}
-                        onPress={() => setFormCategory(cat)}
-                        icon={
-                          <MaterialIcons
-                            name={config.icon as any}
-                            size={14}
-                            color={isSelected ? "#FFFFFF" : t.textSubtle}
-                          />
-                        }
-                      >
-                        <Text
-                          fontSize={12}
-                          fontWeight="500"
-                          color={isSelected ? "#FFFFFF" : "$color"}
-                        >
-                          {config.label}
-                        </Text>
-                      </Button>
-                    );
-                  })}
-                </XStack>
-  
-                {/* Note */}
-                <Text
-                  fontSize={12}
-                  letterSpacing={1}
-                  textTransform="uppercase"
-                  color="$colorSubtle"
-                  marginBottom="$2"
-                >
-                  Note (optional)
-                </Text>
-                <TextArea
-                  value={formNote}
-                  onChangeText={setFormNote}
-                  placeholder="Add a note..."
-                  borderRadius={14}
-                  marginBottom="$4"
-                  numberOfLines={3}
-                  minHeight={80}
-                  fontSize={15}
-                  textAlignVertical="top"
-                />
-  
-                {/* Save Button */}
-                <Button
-                  backgroundColor={Brand.primary}
-                  color="#FFFFFF"
-                  borderRadius={16}
-                  height={52}
-                  pressStyle={{ opacity: 0.85 }}
-                  marginTop="$2"
-                  marginBottom="$2"
-                  onPress={handleSave}
-                >
-                  <Text color="#FFFFFF" fontSize={15} fontWeight="700">
-                    {editingTransaction
-                      ? "Update Transaction"
-                      : "Add Transaction"}
+                    Type
                   </Text>
-                </Button>
+                  <XStack gap="$3" marginBottom="$4">
+                    <Button
+                      flex={1}
+                      height={48}
+                      borderRadius={14}
+                      borderWidth={1}
+                      borderColor={
+                        formType === "income" ? Brand.success : "$borderColor"
+                      }
+                      backgroundColor={
+                        formType === "income" ? Brand.success : "transparent"
+                      }
+                      pressStyle={{ opacity: 0.85 }}
+                      onPress={() => setFormType("income")}
+                      icon={
+                        <MaterialIcons
+                          name="north-east"
+                          size={16}
+                          color={
+                            formType === "income" ? "#FFFFFF" : t.textSubtle
+                          }
+                        />
+                      }
+                    >
+                      <Text
+                        fontWeight="600"
+                        fontSize={14}
+                        color={formType === "income" ? "#FFFFFF" : "$color"}
+                      >
+                        Income
+                      </Text>
+                    </Button>
+                    <Button
+                      flex={1}
+                      height={48}
+                      borderRadius={14}
+                      borderWidth={1}
+                      borderColor={
+                        formType === "expense" ? Brand.danger : "$borderColor"
+                      }
+                      backgroundColor={
+                        formType === "expense" ? Brand.danger : "transparent"
+                      }
+                      pressStyle={{ opacity: 0.85 }}
+                      onPress={() => setFormType("expense")}
+                      icon={
+                        <MaterialIcons
+                          name="south-east"
+                          size={16}
+                          color={
+                            formType === "expense" ? "#FFFFFF" : t.textSubtle
+                          }
+                        />
+                      }
+                    >
+                      <Text
+                        fontWeight="600"
+                        fontSize={14}
+                        color={formType === "expense" ? "#FFFFFF" : "$color"}
+                      >
+                        Expense
+                      </Text>
+                    </Button>
+                  </XStack>
+
+                  {/* Title */}
+                  <Text
+                    fontSize={12}
+                    letterSpacing={1}
+                    textTransform="uppercase"
+                    color="$colorSubtle"
+                    marginBottom="$2"
+                  >
+                    Title
+                  </Text>
+                  <Input
+                    value={formTitle}
+                    onChangeText={setFormTitle}
+                    placeholder="e.g. Grocery Store"
+                    borderRadius={14}
+                    height={48}
+                    marginBottom="$4"
+                    fontSize={15}
+                  />
+
+                  {/* Amount */}
+                  <Text
+                    fontSize={12}
+                    letterSpacing={1}
+                    textTransform="uppercase"
+                    color="$colorSubtle"
+                    marginBottom="$2"
+                  >
+                    Amount ($)
+                  </Text>
+                  <Input
+                    value={formAmount}
+                    onChangeText={setFormAmount}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                    borderRadius={14}
+                    height={48}
+                    marginBottom="$4"
+                    fontSize={15}
+                  />
+
+                  {/* Category */}
+                  <Text
+                    fontSize={12}
+                    letterSpacing={1}
+                    textTransform="uppercase"
+                    color="$colorSubtle"
+                    marginBottom="$2"
+                  >
+                    Category
+                  </Text>
+                  <XStack flexWrap="wrap" gap="$2" marginBottom="$4">
+                    {CATEGORIES.map((cat) => {
+                      const isSelected = formCategory === cat;
+                      const config = CATEGORY_CONFIG[cat];
+                      return (
+                        <Button
+                          key={cat}
+                          size="$3"
+                          borderRadius={12}
+                          borderWidth={1}
+                          borderColor={
+                            isSelected ? Brand.primary : "$borderColor"
+                          }
+                          backgroundColor={
+                            isSelected ? Brand.primary : "$backgroundFocus"
+                          }
+                          pressStyle={{ opacity: 0.8 }}
+                          onPress={() => setFormCategory(cat)}
+                          icon={
+                            <MaterialIcons
+                              name={config.icon as any}
+                              size={14}
+                              color={isSelected ? "#FFFFFF" : t.textSubtle}
+                            />
+                          }
+                        >
+                          <Text
+                            fontSize={12}
+                            fontWeight="500"
+                            color={isSelected ? "#FFFFFF" : "$color"}
+                          >
+                            {config.label}
+                          </Text>
+                        </Button>
+                      );
+                    })}
+                  </XStack>
+
+                  {/* Note */}
+                  <Text
+                    fontSize={12}
+                    letterSpacing={1}
+                    textTransform="uppercase"
+                    color="$colorSubtle"
+                    marginBottom="$2"
+                  >
+                    Note (optional)
+                  </Text>
+                  <TextArea
+                    value={formNote}
+                    onChangeText={setFormNote}
+                    placeholder="Add a note..."
+                    borderRadius={14}
+                    marginBottom="$4"
+                    numberOfLines={3}
+                    minHeight={80}
+                    fontSize={15}
+                    textAlignVertical="top"
+                  />
+
+                  {/* Save Button */}
+                  <Button
+                    backgroundColor={Brand.primary}
+                    color="#FFFFFF"
+                    borderRadius={16}
+                    height={52}
+                    pressStyle={{ opacity: 0.85 }}
+                    marginTop="$2"
+                    marginBottom="$2"
+                    onPress={handleSave}
+                  >
+                    <Text color="#FFFFFF" fontSize={15} fontWeight="700">
+                      {editingTransaction
+                        ? "Update Transaction"
+                        : "Add Transaction"}
+                    </Text>
+                  </Button>
                 </TScrollView>
                 <Unspaced>
                   <Dialog.Close asChild>
@@ -1081,7 +1116,11 @@ export default function FinanceScreen() {
                         resetForm();
                       }}
                     >
-                      <MaterialIcons name="close" size={18} color={t.textSubtle} />
+                      <MaterialIcons
+                        name="close"
+                        size={18}
+                        color={t.textSubtle}
+                      />
                     </Button>
                   </Dialog.Close>
                 </Unspaced>
