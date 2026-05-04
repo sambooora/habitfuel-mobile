@@ -116,12 +116,9 @@ export function usePomodoroStorage() {
     async (taskId: string, priority: string) => {
       setStore((prev) => {
         const existing = prev.records[taskId];
-        // Determine required sessions for this task:
-        // prefer existing record.requiredSessions, then global setting, then priority-based fallback
+        // Always use the current global setting so changes take effect immediately
         const required =
-          existing?.requiredSessions ??
-          prev.settings?.requiredSessions ??
-          getRequiredSessions(priority);
+          prev.settings?.requiredSessions ?? getRequiredSessions(priority);
         const completedSessions = (existing?.completedSessions ?? 0) + 1;
         const next: PomodoroStore = {
           ...prev,
@@ -143,17 +140,24 @@ export function usePomodoroStorage() {
   );
 
   // Get a task's pomodoro record (or sensible defaults)
+  // Always uses the current global requiredSessions so changes reflect immediately.
   const getRecord = useCallback(
     (taskId: string, priority?: string): TaskPomodoroRecord => {
-      const globalRequired = store.settings?.requiredSessions;
-      return (
-        store.records[taskId] ?? {
-          taskId,
-          completedSessions: 0,
-          requiredSessions:
-            globalRequired ?? getRequiredSessions(priority ?? "medium"),
-        }
-      );
+      const globalRequired =
+        store.settings?.requiredSessions ??
+        getRequiredSessions(priority ?? "medium");
+      const existing = store.records[taskId];
+      if (existing) {
+        return {
+          ...existing,
+          requiredSessions: globalRequired,
+        };
+      }
+      return {
+        taskId,
+        completedSessions: 0,
+        requiredSessions: globalRequired,
+      };
     },
     [store.records, store.settings],
   );

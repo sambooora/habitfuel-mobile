@@ -1,6 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   ScrollView,
@@ -21,6 +21,7 @@ import {
 } from "@/hooks/use-habit-storage";
 import { useNickname } from "@/hooks/use-nickname";
 import { usePomodoroStorage } from "@/hooks/use-pomodoro-storage";
+import { useSplashDone } from "@/hooks/use-splash";
 import {
   PRIORITY_CONFIG,
   TAG_CONFIG,
@@ -34,7 +35,7 @@ export default function HomeScreen() {
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
   const { accentColor } = useAccentColor();
   const router = useRouter();
-  const { getRecord } = usePomodoroStorage();
+  const { getRecord, reload: reloadPomodoro } = usePomodoroStorage();
   const { nickname } = useNickname();
   const { tasks } = useTaskStorage();
   const {
@@ -45,6 +46,15 @@ export default function HomeScreen() {
     consistencyPercent,
     dailyRates,
   } = useHabitStorage();
+
+  // ── Reload pomodoro data when tab gains focus ────────
+  useFocusEffect(
+    useCallback(() => {
+      reloadPomodoro();
+    }, [reloadPomodoro]),
+  );
+
+  const splashDone = useSplashDone();
 
   // ── Congratulations popup ─────────────────────────────
   const [showCongrats, setShowCongrats] = useState(false);
@@ -60,11 +70,11 @@ export default function HomeScreen() {
   const prevAllDoneRef = useRef(allHabitsDoneToday);
 
   useEffect(() => {
-    if (allHabitsDoneToday && !prevAllDoneRef.current) {
+    if (splashDone && allHabitsDoneToday && !prevAllDoneRef.current) {
       setShowCongrats(true);
     }
     prevAllDoneRef.current = allHabitsDoneToday;
-  }, [allHabitsDoneToday]);
+  }, [allHabitsDoneToday, splashDone]);
 
   // Resolve habit colors for dark mode
   const resolveHabitColors = (bg: string, iconColor: string) => {
@@ -232,7 +242,6 @@ export default function HomeScreen() {
                 Hello, {nickname || "User"}!
               </ThemedText>
             </View>
-            <View style={[styles.avatar, { backgroundColor: t.avatarBg }]} />
           </View>
 
           {/* ── Consistency Card ────────────────────────────── */}

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
@@ -67,7 +67,18 @@ export default function ExploreScreen() {
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
   const { accentColor, accentOnColor } = useAccentColor();
   const router = useRouter();
-  const { getRecord, hasCompletedRequiredSessions } = usePomodoroStorage();
+  const {
+    getRecord,
+    hasCompletedRequiredSessions,
+    reload: reloadPomodoro,
+  } = usePomodoroStorage();
+
+  // Reload pomodoro data when tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      reloadPomodoro();
+    }, [reloadPomodoro]),
+  );
   const {
     filteredTasks,
     stats,
@@ -353,16 +364,6 @@ export default function ExploreScreen() {
                 My Tasks
               </ThemedText>
             </View>
-            <TouchableOpacity
-              style={[
-                styles.headerAction,
-                { backgroundColor: t.cardBg },
-                shadow.cardSubtle,
-              ]}
-              onPress={openAddSheet}
-            >
-              <MaterialIcons name="add" size={20} color={t.textPrimary} />
-            </TouchableOpacity>
           </View>
 
           {/* Stats Bar */}
@@ -724,101 +725,32 @@ export default function ExploreScreen() {
                         overdue && styles.taskCardOverdue,
                       ]}
                     >
-                      {/* Top row: tag + priority */}
-                      <View style={styles.taskTopRow}>
-                        <View
-                          style={[
-                            styles.taskTag,
-                            { backgroundColor: tagConfig.bgColor },
-                          ]}
-                        >
-                          <MaterialIcons
-                            name={tagConfig.icon as any}
-                            size={12}
-                            color={tagConfig.color}
-                          />
+                      {/* Content row: icon left + text right */}
+                      <View style={styles.taskContentRow}>
+                        <View style={styles.taskContentText}>
                           <ThemedText
                             style={[
-                              styles.taskTagText,
-                              { color: tagConfig.color },
+                              styles.taskTitle,
+                              task.status === "done" && styles.taskTitleDone,
                             ]}
+                            lightColor={Palette.light.textPrimary}
+                            darkColor={Palette.dark.textPrimary}
+                            numberOfLines={2}
                           >
-                            {tagConfig.label}
+                            {task.title}
                           </ThemedText>
-                        </View>
-                        <View
-                          style={[
-                            styles.priorityBadge,
-                            { backgroundColor: priorityConfig.bgColor },
-                          ]}
-                        >
-                          <ThemedText
-                            style={[
-                              styles.priorityBadgeText,
-                              { color: priorityConfig.color },
-                            ]}
-                          >
-                            {priorityConfig.label}
-                          </ThemedText>
-                        </View>
-                        {/*{isFocus && task.status !== "done" && (
-                          <View
-                            style={[
-                              styles.pomBadge,
-                              {
-                                backgroundColor: pomDone
-                                  ? isDarkMode
-                                    ? "#0A8F5A22"
-                                    : "#E6F5EE"
-                                  : isDarkMode
-                                    ? "#252930"
-                                    : "#F0F2F4",
-                              },
-                            ]}
-                          >
-                            <MaterialIcons
-                              name="timer"
-                              size={10}
-                              color={pomDone ? "#0A8F5A" : t.textSubtle}
-                            />
+                          {task.description ? (
                             <ThemedText
-                              style={[
-                                styles.pomBadgeText,
-                                {
-                                  color: pomDone ? "#0A8F5A" : t.textSubtle,
-                                },
-                              ]}
+                              style={styles.taskDescription}
+                              lightColor={Palette.light.textSecondary}
+                              darkColor={Palette.dark.textSecondary}
+                              numberOfLines={2}
                             >
-                              {pomRecord!.completedSessions}/{pomRequired}
+                              {task.description}
                             </ThemedText>
-                          </View>
-                        )}*/}
+                          ) : null}
+                        </View>
                       </View>
-
-                      {/* Title */}
-                      <ThemedText
-                        style={[
-                          styles.taskTitle,
-                          task.status === "done" && styles.taskTitleDone,
-                        ]}
-                        lightColor={Palette.light.textPrimary}
-                        darkColor={Palette.dark.textPrimary}
-                        numberOfLines={2}
-                      >
-                        {task.title}
-                      </ThemedText>
-
-                      {/* Description */}
-                      {task.description ? (
-                        <ThemedText
-                          style={styles.taskDescription}
-                          lightColor={Palette.light.textSecondary}
-                          darkColor={Palette.dark.textSecondary}
-                          numberOfLines={2}
-                        >
-                          {task.description}
-                        </ThemedText>
-                      ) : null}
 
                       {/* Footer */}
                       <View style={styles.taskFooter}>
@@ -2322,6 +2254,23 @@ const styles = StyleSheet.create({
   taskCardOverdue: {
     borderLeftWidth: 3,
     borderLeftColor: Brand.danger,
+  },
+  taskContentRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  taskTagIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  taskContentText: {
+    flex: 1,
+    gap: 4,
   },
   taskTopRow: {
     flexDirection: "row",
