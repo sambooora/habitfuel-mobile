@@ -591,13 +591,13 @@ export default function HabitsScreen() {
         </ScrollView>
 
         {/* FAB */}
-        <TouchableOpacity
+        {/*<TouchableOpacity
           activeOpacity={0.8}
           onPress={openAddModal}
           style={[styles.fab, { backgroundColor: t.fabBg }, shadow.fab]}
         >
           <MaterialIcons name="add" size={28} color={t.fabIcon} />
-        </TouchableOpacity>
+        </TouchableOpacity>*/}
       </SafeAreaView>
 
       {/* Add / Edit modal */}
@@ -821,6 +821,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+  },
+  chip: {
+    height: 36,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   iconGrid: {
     flexDirection: "row",

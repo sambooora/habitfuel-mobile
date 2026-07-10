@@ -1,7 +1,7 @@
 // @ts-nocheck
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useCallback, useMemo, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, DeviceEventEmitter, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Button,
@@ -92,6 +92,14 @@ export default function FinanceScreen() {
     resetForm();
     setFormSheetOpen(true);
   }, [resetForm]);
+
+  // Listen for the standalone "add" button in the floating tab bar
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("tabbar:add:finances", () => {
+      openAddSheet();
+    });
+    return () => sub.remove();
+  }, [openAddSheet]);
 
   const openEditSheet = useCallback((transaction: Transaction) => {
     setEditingTransaction(transaction);
@@ -595,16 +603,6 @@ export default function FinanceScreen() {
             </View>
           )}
         </TScrollView>
-
-        {/* FAB */}
-        <Button
-          unstyled
-          pressStyle={{ opacity: 0.8, scale: 0.96 }}
-          onPress={openAddSheet}
-          style={[styles.fab, { backgroundColor: t.fabBg }, shadow.fab]}
-        >
-          <MaterialIcons name="add" size={22} color={t.fabIcon} />
-        </Button>
 
         {/* ═══════════════════════════════════════════════════════ */}
         {/* DETAIL DIALOG                                          */}

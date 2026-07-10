@@ -1,6 +1,7 @@
 // @ts-nocheck
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useCallback, useMemo, useState } from "react";
+import { Keyboard } from "react-native";
 import { Button, Sheet, Text, XStack, YStack } from "tamagui";
 
 import { Brand, Palette } from "@/constants/theme";
@@ -70,10 +71,12 @@ export function DatePicker({
   const [viewMonth, setViewMonth] = useState(initialDate.getMonth());
 
   const handleOpen = useCallback(() => {
+    Keyboard.dismiss();
     const d = value ?? new Date();
     setViewYear(d.getFullYear());
     setViewMonth(d.getMonth());
-    setOpen(true);
+    // Small delay lets the keyboard finish dismissing before the sheet animates in
+    setTimeout(() => setOpen(true), 50);
   }, [value]);
 
   const handlePrevMonth = useCallback(() => {
@@ -196,6 +199,7 @@ export function DatePicker({
           paddingHorizontal="$5"
           paddingTop="$4"
           paddingBottom="$6"
+          keyboardAvoidingView
         >
           <YStack gap="$3">
             {/* Header with month/year navigation */}

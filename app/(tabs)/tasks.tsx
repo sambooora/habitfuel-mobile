@@ -1,9 +1,10 @@
 // @ts-nocheck
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  DeviceEventEmitter,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -141,6 +142,14 @@ export default function ExploreScreen() {
     resetForm();
     setFormSheetOpen(true);
   }, [resetForm]);
+
+  // Listen for the standalone "add" button in the floating tab bar
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("tabbar:add:tasks", () => {
+      openAddSheet();
+    });
+    return () => sub.remove();
+  }, [openAddSheet]);
 
   const openEditSheet = useCallback((task: Task) => {
     setEditingTask(task);
@@ -865,16 +874,6 @@ export default function ExploreScreen() {
             </View>
           )}
         </ScrollView>
-
-        {/* FAB */}
-        <Button
-          unstyled
-          pressStyle={{ opacity: 0.8, scale: 0.96 }}
-          onPress={openAddSheet}
-          style={[styles.fab, { backgroundColor: t.fabBg }, shadow.fab]}
-        >
-          <MaterialIcons name="add" size={22} color={t.fabIcon} />
-        </Button>
 
         {/* ═══════════════════════════════════════════════════════ */}
         {/* DETAIL DIALOG                                           */}
