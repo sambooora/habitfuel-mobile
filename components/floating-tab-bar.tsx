@@ -18,6 +18,11 @@ import { useAccentColor } from "@/hooks/use-accent-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const TAB_HEIGHT = 64;
+
+/** Total bottom padding screens need to clear the floating bar.
+ *  = bar height + the offset used in `bottom: insets.bottom + N` + breathing room
+ */
+export const TABBAR_SCROLL_PADDING = TAB_HEIGHT + 32 + 16;
 const ADD_BTN_SIZE = 64;
 
 /** Routes that show the standalone "add" button on the right. */

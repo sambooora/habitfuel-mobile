@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TABBAR_SCROLL_PADDING } from "@/components/floating-tab-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
@@ -713,7 +714,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: TABBAR_SCROLL_PADDING,
     gap: 20,
   },
 
