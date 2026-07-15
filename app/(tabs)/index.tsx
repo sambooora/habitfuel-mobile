@@ -203,7 +203,7 @@ export default function HomeScreen() {
             )}
 
             <TouchableOpacity
-              style={[styles.congratsBtn, { backgroundColor: accentColor }]}
+              style={[styles.congratsBtn, { backgroundColor: isDarkMode ? "#252930" : "#F0F2F4" }]}
               activeOpacity={0.8}
               onPress={() => setShowCongrats(false)}
             >
