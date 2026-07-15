@@ -20,7 +20,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, Palette, Shadows } from "@/constants/theme";
+import { Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAccentColor } from "@/hooks/use-accent-color";
 import {
@@ -458,9 +458,7 @@ export default function HabitsScreen() {
                         styles.iconOption,
                         {
                           backgroundColor: active
-                            ? isDarkMode
-                              ? Brand.primaryMuted
-                              : Brand.infoBg
+                            ? t.taskIconBg
                             : t.chipBg,
                           borderColor: active ? accentColor : "transparent",
                           borderWidth: 2,

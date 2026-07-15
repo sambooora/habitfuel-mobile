@@ -20,7 +20,7 @@ import {
 import { TABBAR_SCROLL_PADDING } from "@/components/floating-tab-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { Fonts, Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   CATEGORY_CONFIG,
@@ -299,12 +299,7 @@ export default function FinanceScreen() {
                 Balance
               </ThemedText>
               <ThemedText
-                style={[
-                  styles.balanceAmount,
-                  stats.balance >= 0
-                    ? styles.amountPositive
-                    : styles.amountNegative,
-                ]}
+                style={styles.balanceAmount}
                 lightColor={Palette.light.textPrimary}
                 darkColor={Palette.dark.textPrimary}
               >
@@ -335,7 +330,7 @@ export default function FinanceScreen() {
                   <MaterialIcons
                     name={stat.icon}
                     size={18}
-                    color={stat.active ? Brand.primary : t.taskIconColor}
+                    color={stat.active ? t.textPrimary : t.taskIconColor}
                   />
                 </View>
                 <ThemedText
@@ -587,10 +582,7 @@ export default function FinanceScreen() {
                         </ThemedText>
                       </View>
                       <ThemedText
-                        style={[
-                          styles.transactionAmount,
-                          item.type === "income" ? styles.amountPositive : null,
-                        ]}
+                        style={styles.transactionAmount}
                         lightColor={Palette.light.textPrimary}
                         darkColor={Palette.dark.textPrimary}
                       >
@@ -689,11 +681,7 @@ export default function FinanceScreen() {
                       <Text
                         fontSize={28}
                         fontWeight="800"
-                        color={
-                          detailTransaction.type === "income"
-                            ? Brand.success
-                            : Brand.danger
-                        }
+                        color="$color"
                       >
                         {detailTransaction.type === "income" ? "+" : "-"}
                         {formatCurrency(detailTransaction.amount)}
@@ -765,8 +753,8 @@ export default function FinanceScreen() {
                     <XStack gap="$3" marginBottom="$3">
                       <Button
                         flex={1}
-                        backgroundColor={Brand.primary}
-                        color="#FFFFFF"
+                        backgroundColor={t.textPrimary}
+                        color={t.textInverse}
                         borderRadius={14}
                         height={48}
                         pressStyle={{ opacity: 0.85 }}
@@ -774,7 +762,7 @@ export default function FinanceScreen() {
                           <MaterialIcons
                             name="edit"
                             size={18}
-                            color="#FFFFFF"
+                            color={t.textInverse}
                           />
                         }
                         onPress={() => openEditSheet(detailTransaction)}
@@ -783,8 +771,8 @@ export default function FinanceScreen() {
                       </Button>
                       <Button
                         flex={1}
-                        backgroundColor={Brand.danger}
-                        color="#FFFFFF"
+                        backgroundColor={t.chipBg}
+                        color={t.textSecondary}
                         borderRadius={14}
                         height={48}
                         pressStyle={{ opacity: 0.85 }}
@@ -792,7 +780,7 @@ export default function FinanceScreen() {
                           <MaterialIcons
                             name="delete"
                             size={18}
-                            color="#FFFFFF"
+                            color={t.textSecondary}
                           />
                         }
                         onPress={() => handleDelete(detailTransaction.id)}
@@ -909,10 +897,10 @@ export default function FinanceScreen() {
                       borderRadius={14}
                       borderWidth={1}
                       borderColor={
-                        formType === "income" ? Brand.success : "$borderColor"
+                        formType === "income" ? t.textPrimary : "$borderColor"
                       }
                       backgroundColor={
-                        formType === "income" ? Brand.success : "transparent"
+                        formType === "income" ? t.textPrimary : "transparent"
                       }
                       pressStyle={{ opacity: 0.85 }}
                       onPress={() => setFormType("income")}
@@ -921,7 +909,7 @@ export default function FinanceScreen() {
                           name="north-east"
                           size={16}
                           color={
-                            formType === "income" ? "#FFFFFF" : t.textSubtle
+                            formType === "income" ? t.textInverse : t.textSubtle
                           }
                         />
                       }
@@ -929,7 +917,7 @@ export default function FinanceScreen() {
                       <Text
                         fontWeight="600"
                         fontSize={14}
-                        color={formType === "income" ? "#FFFFFF" : "$color"}
+                        color={formType === "income" ? t.textInverse : "$color"}
                       >
                         Income
                       </Text>
@@ -940,10 +928,10 @@ export default function FinanceScreen() {
                       borderRadius={14}
                       borderWidth={1}
                       borderColor={
-                        formType === "expense" ? Brand.danger : "$borderColor"
+                        formType === "expense" ? t.textPrimary : "$borderColor"
                       }
                       backgroundColor={
-                        formType === "expense" ? Brand.danger : "transparent"
+                        formType === "expense" ? t.textPrimary : "transparent"
                       }
                       pressStyle={{ opacity: 0.85 }}
                       onPress={() => setFormType("expense")}
@@ -952,7 +940,7 @@ export default function FinanceScreen() {
                           name="south-east"
                           size={16}
                           color={
-                            formType === "expense" ? "#FFFFFF" : t.textSubtle
+                            formType === "expense" ? t.textInverse : t.textSubtle
                           }
                         />
                       }
@@ -960,7 +948,7 @@ export default function FinanceScreen() {
                       <Text
                         fontWeight="600"
                         fontSize={14}
-                        color={formType === "expense" ? "#FFFFFF" : "$color"}
+                        color={formType === "expense" ? t.textInverse : "$color"}
                       >
                         Expense
                       </Text>
@@ -1029,10 +1017,10 @@ export default function FinanceScreen() {
                           borderRadius={12}
                           borderWidth={1}
                           borderColor={
-                            isSelected ? Brand.primary : "$borderColor"
+                            isSelected ? t.textPrimary : "$borderColor"
                           }
                           backgroundColor={
-                            isSelected ? Brand.primary : "$backgroundFocus"
+                            isSelected ? t.textPrimary : "$backgroundFocus"
                           }
                           pressStyle={{ opacity: 0.8 }}
                           onPress={() => setFormCategory(cat)}
@@ -1080,8 +1068,8 @@ export default function FinanceScreen() {
 
                   {/* Save Button */}
                   <Button
-                    backgroundColor={Brand.primary}
-                    color="#FFFFFF"
+                    backgroundColor={t.textPrimary}
+                    color={t.textInverse}
                     borderRadius={16}
                     height={52}
                     pressStyle={{ opacity: 0.85 }}
@@ -1313,12 +1301,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  amountPositive: {
-    color: Brand.success,
-  },
-  amountNegative: {
-    color: Brand.danger,
-  },
+  amountPositive: {},
+  amountNegative: {},
   emptyState: {
     alignItems: "center",
     justifyContent: "center",

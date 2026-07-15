@@ -21,18 +21,18 @@ export const STATUS_CONFIG: Record<
   { label: string; icon: string; color: string }
 > = {
   todo: { label: "To Do", icon: "radio-button-unchecked", color: "#8F98A1" },
-  in_progress: { label: "In Progress", icon: "timelapse", color: "#E8A317" },
-  done: { label: "Done", icon: "check-circle", color: "#0A8F5A" },
+  in_progress: { label: "In Progress", icon: "timelapse", color: "#717882" },
+  done: { label: "Done", icon: "check-circle", color: "#555B64" },
 };
 
 export const PRIORITY_CONFIG: Record<
   TaskPriority,
   { label: string; color: string; bgColor: string }
 > = {
-  low: { label: "Low", color: "#5B9BD5", bgColor: "#EBF3FB" },
-  medium: { label: "Medium", color: "#E8A317", bgColor: "#FFF6E5" },
-  high: { label: "High", color: "#E86417", bgColor: "#FFF0E6" },
-  urgent: { label: "Urgent", color: "#D94141", bgColor: "#FDECEC" },
+  low: { label: "Low", color: "#9AA0A8", bgColor: "#F0F2F4" },
+  medium: { label: "Medium", color: "#717882", bgColor: "#F0F2F4" },
+  high: { label: "High", color: "#555B64", bgColor: "#ECEEF1" },
+  urgent: { label: "Urgent", color: "#111318", bgColor: "#E8EAED" },
 };
 
 export type TaskTag =
@@ -55,68 +55,68 @@ export const TAG_CONFIG: Record<
   design: {
     label: "Design",
     icon: "palette",
-    color: "#9B59B6",
-    bgColor: "#F3EAFA",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   development: {
     label: "Development",
     icon: "code",
-    color: "#2E86C1",
-    bgColor: "#E8F4FD",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   research: {
     label: "Research",
     icon: "science",
-    color: "#17A589",
-    bgColor: "#E8F8F5",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   meeting: {
     label: "Meeting",
     icon: "groups",
-    color: "#E67E22",
-    bgColor: "#FEF5E7",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   planning: {
     label: "Planning",
     icon: "event-note",
-    color: "#2874A6",
-    bgColor: "#EBF5FB",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   testing: {
     label: "Testing",
     icon: "bug-report",
-    color: "#C0392B",
-    bgColor: "#FDEDEC",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   review: {
     label: "Review",
     icon: "rate-review",
-    color: "#8E44AD",
-    bgColor: "#F4ECF7",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   personal: {
     label: "Personal",
     icon: "person",
-    color: "#1ABC9C",
-    bgColor: "#E8F6F3",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   health: {
     label: "Health",
     icon: "favorite",
-    color: "#E74C3C",
-    bgColor: "#FDEDEC",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   learning: {
     label: "Learning",
     icon: "school",
-    color: "#F39C12",
-    bgColor: "#FEF9E7",
+    color: "#717882",
+    bgColor: "#F0F2F4",
   },
   other: {
     label: "Other",
     icon: "label",
-    color: "#7F8C8D",
-    bgColor: "#F2F3F4",
+    color: "#8F98A1",
+    bgColor: "#F0F2F4",
   },
 };
 

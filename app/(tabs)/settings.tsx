@@ -11,14 +11,12 @@ import { TABBAR_SCROLL_PADDING } from "@/components/floating-tab-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Fonts, Palette, Shadows } from "@/constants/theme";
-import { useAccentColor } from "@/hooks/use-accent-color";
 import { useThemeSetting } from "@/hooks/use-color-scheme";
 import { useNickname } from "@/hooks/use-nickname";
 
 export default function SettingsScreen() {
   const { nickname, setNickname } = useNickname();
   const { schemeSetting, setSchemeSetting, colorScheme } = useThemeSetting();
-  const { accentId, accentColor, options, setAccentId } = useAccentColor();
   const isDarkMode = colorScheme === "dark";
   const t = isDarkMode ? Palette.dark : Palette.light;
   const shadow = isDarkMode ? Shadows.dark : Shadows.light;
@@ -124,10 +122,10 @@ export default function SettingsScreen() {
                   styles.themeChip,
                   {
                     backgroundColor:
-                      schemeSetting === "light" ? accentColor : t.chipBg,
+                      schemeSetting === "light" ? t.chipBgActive : t.chipBg,
                     borderWidth: 1,
                     borderColor:
-                      schemeSetting === "light" ? accentColor : t.border,
+                      schemeSetting === "light" ? t.chipBgActive : t.border,
                   },
                 ]}
               >
@@ -135,12 +133,12 @@ export default function SettingsScreen() {
                   style={styles.themeChipText}
                   lightColor={
                     schemeSetting === "light"
-                      ? "#FFFFFF"
+                      ? Palette.light.chipTextActive
                       : Palette.light.textSecondary
                   }
                   darkColor={
                     schemeSetting === "light"
-                      ? "#FFFFFF"
+                      ? Palette.dark.chipTextActive
                       : Palette.dark.textSecondary
                   }
                 >
@@ -153,10 +151,10 @@ export default function SettingsScreen() {
                   styles.themeChip,
                   {
                     backgroundColor:
-                      schemeSetting === "dark" ? accentColor : t.chipBg,
+                      schemeSetting === "dark" ? t.chipBgActive : t.chipBg,
                     borderWidth: 1,
                     borderColor:
-                      schemeSetting === "dark" ? accentColor : t.border,
+                      schemeSetting === "dark" ? t.chipBgActive : t.border,
                   },
                 ]}
               >
@@ -164,12 +162,12 @@ export default function SettingsScreen() {
                   style={styles.themeChipText}
                   lightColor={
                     schemeSetting === "dark"
-                      ? "#FFFFFF"
+                      ? Palette.light.chipTextActive
                       : Palette.light.textSecondary
                   }
                   darkColor={
                     schemeSetting === "dark"
-                      ? "#FFFFFF"
+                      ? Palette.dark.chipTextActive
                       : Palette.dark.textSecondary
                   }
                 >
@@ -182,10 +180,10 @@ export default function SettingsScreen() {
                   styles.themeChip,
                   {
                     backgroundColor:
-                      schemeSetting === "system" ? accentColor : t.chipBg,
+                      schemeSetting === "system" ? t.chipBgActive : t.chipBg,
                     borderWidth: 1,
                     borderColor:
-                      schemeSetting === "system" ? accentColor : t.border,
+                      schemeSetting === "system" ? t.chipBgActive : t.border,
                   },
                 ]}
               >
@@ -193,74 +191,18 @@ export default function SettingsScreen() {
                   style={styles.themeChipText}
                   lightColor={
                     schemeSetting === "system"
-                      ? "#FFFFFF"
+                      ? Palette.light.chipTextActive
                       : Palette.light.textSecondary
                   }
                   darkColor={
                     schemeSetting === "system"
-                      ? "#FFFFFF"
+                      ? Palette.dark.chipTextActive
                       : Palette.dark.textSecondary
                   }
                 >
                   ⚙️ System
                 </ThemedText>
               </Pressable>
-            </View>
-          </View>
-
-          {/* Accent Color Card */}
-          <View
-            style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
-          >
-            <View style={styles.row}>
-              <View>
-                <ThemedText
-                  style={styles.cardTitle}
-                  lightColor={Palette.light.textPrimary}
-                  darkColor={Palette.dark.textPrimary}
-                >
-                  Accent Color
-                </ThemedText>
-                <ThemedText
-                  style={styles.cardSubtitle}
-                  lightColor={Palette.light.textSecondary}
-                  darkColor={Palette.dark.textSecondary}
-                >
-                  {"Choose your app's primary color"}
-                </ThemedText>
-              </View>
-            </View>
-            <View style={styles.accentRow}>
-              {options.map((option) => {
-                const isSelected = accentId === option.id;
-                const isWhite = option.id === "white";
-                return (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => setAccentId(option.id)}
-                    style={[
-                      styles.accentSwatchWrapper,
-                      { borderColor: isSelected ? accentColor : "transparent" },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.accentSwatch,
-                        { backgroundColor: option.swatch },
-                        isWhite &&
-                          !isSelected && {
-                            borderWidth: 1,
-                            borderColor: t.border,
-                          },
-                        isSelected && {
-                          borderWidth: 3,
-                          borderColor: "#FFFFFF",
-                        },
-                      ]}
-                    />
-                  </Pressable>
-                );
-              })}
             </View>
           </View>
         </ScrollView>
@@ -340,21 +282,5 @@ const styles = StyleSheet.create({
   themeChipText: {
     fontSize: 13,
     fontWeight: "600",
-  },
-  accentRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  accentSwatchWrapper: {
-    padding: 3,
-    borderWidth: 2,
-    borderRadius: 24,
-    borderColor: "transparent",
-  },
-  accentSwatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
   },
 });

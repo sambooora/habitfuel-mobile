@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Image, StyleSheet, useColorScheme } from "react-native";
 
 interface SplashScreenProps {
@@ -12,13 +12,22 @@ export function CustomSplashScreen({ onFinish }: SplashScreenProps) {
   const fadeText = useRef(new Animated.Value(0)).current;
   const scaleText = useRef(new Animated.Value(0.85)).current;
   const fadeOut = useRef(new Animated.Value(1)).current;
-
+  // Store onFinish in a ref so the effect never needs to re-run when the
+  // parent re-renders and passes a new function reference.
+  const onFinishRef = useRef(onFinish);
   useEffect(() => {
-    // 1. Fade-in + scale the text
+    onFinishRef.current = onFinish;
+  });
+
+  // Wait for the image to finish decoding before starting animations.
+  const [imageReady, setImageReady] = useState(false);
+
+  const startAnimations = useCallback(() => {
+    // 1. Fade-in + scale the content
     Animated.parallel([
       Animated.timing(fadeText, {
         toValue: 1,
-        duration: 600,
+        duration: 1000,
         useNativeDriver: true,
       }),
       Animated.spring(scaleText, {
@@ -33,13 +42,18 @@ export function CustomSplashScreen({ onFinish }: SplashScreenProps) {
     const timer = setTimeout(() => {
       Animated.timing(fadeOut, {
         toValue: 0,
-        duration: 400,
+        duration: 800,
         useNativeDriver: true,
-      }).start(() => onFinish());
-    }, 1800);
+      }).start(() => onFinishRef.current());
+    }, 2800);
 
     return () => clearTimeout(timer);
-  }, [fadeText, scaleText, fadeOut, onFinish]);
+  }, [fadeText, scaleText, fadeOut]);
+
+  useEffect(() => {
+    if (!imageReady) return;
+    return startAnimations();
+  }, [imageReady, startAnimations]);
 
   return (
     <Animated.View
@@ -60,7 +74,8 @@ export function CustomSplashScreen({ onFinish }: SplashScreenProps) {
       >
         <Image
           source={require("@/assets/images/icon.png")}
-          style={[styles.logo, isDark && { tintColor: "#FFFFFF" }]}
+          style={styles.logo}
+          onLoad={() => setImageReady(true)}
         />
         <Animated.Text
           style={[styles.title, { color: isDark ? "#FFFFFF" : "#000000" }]}
@@ -88,10 +103,10 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   logo: {
-    width: 72,
-    height: 72,
-    marginBottom: 16,
+    width: 100,
+    height: 100,
     resizeMode: "contain",
+    marginBottom: 20,
   },
   title: {
     fontFamily: "Poppins_700Bold",

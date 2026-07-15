@@ -30,7 +30,7 @@ import { DatePicker } from "@/components/date-picker";
 import { TABBAR_SCROLL_PADDING } from "@/components/floating-tab-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { Fonts, Palette, Shadows } from "@/constants/theme";
 import { useAccentColor } from "@/hooks/use-accent-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { isFocusTask, usePomodoroStorage } from "@/hooks/use-pomodoro-storage";
@@ -408,7 +408,7 @@ export default function ExploreScreen() {
               ]}
             >
               <ThemedText
-                style={[styles.statMiniValue, { color: Brand.success }]}
+                style={[styles.statMiniValue, { color: t.textPrimary }]}
               >
                 {stats.completionRate}%
               </ThemedText>
@@ -429,7 +429,7 @@ export default function ExploreScreen() {
                 ]}
               >
                 <ThemedText
-                  style={[styles.statMiniValue, { color: Brand.danger }]}
+                  style={[styles.statMiniValue, { color: t.textPrimary }]}
                 >
                   {stats.overdue}
                 </ThemedText>
@@ -451,7 +451,7 @@ export default function ExploreScreen() {
                 ]}
               >
                 <ThemedText
-                  style={[styles.statMiniValue, { color: Brand.danger }]}
+                  style={[styles.statMiniValue, { color: t.textPrimary }]}
                 >
                   {stats.urgentCount}
                 </ThemedText>
@@ -473,7 +473,7 @@ export default function ExploreScreen() {
                 ]}
               >
                 <ThemedText
-                  style={[styles.statMiniValue, { color: Brand.warning }]}
+                  style={[styles.statMiniValue, { color: t.textSubtle }]}
                 >
                   {stats.dueToday}
                 </ThemedText>
@@ -547,7 +547,7 @@ export default function ExploreScreen() {
                   key={tab.key}
                   style={[
                     styles.tab,
-                    isActive ? { backgroundColor: accentColor } : null,
+                    isActive ? { backgroundColor: '#000000' } : null,
                     !isActive && { backgroundColor: t.cardBg },
                   ]}
                   onPress={() => setStatusFilter(tab.key)}
@@ -582,8 +582,8 @@ export default function ExploreScreen() {
                       }
                       darkColor={
                         isActive
-                          ? Palette.dark.textPrimary
-                          : Palette.dark.textSubtle
+                        ? Palette.light.textPrimary
+                        : Palette.light.textSubtle
                       }
                     >
                       {tab.count}
@@ -678,8 +678,8 @@ export default function ExploreScreen() {
               <TouchableOpacity onPress={resetFilters}>
                 <ThemedText
                   style={styles.clearAllText}
-                  lightColor={Brand.danger}
-                  darkColor={Brand.dangerLight}
+                  lightColor={Palette.light.textSecondary}
+                  darkColor={Palette.dark.textSecondary}
                 >
                   Clear All
                 </ThemedText>
@@ -795,7 +795,7 @@ export default function ExploreScreen() {
                                 size={14}
                                 color={
                                   progress.completed === progress.total
-                                    ? "#0A8F5A"
+                                    ? t.textPrimary
                                     : themedSubText
                                 }
                               />
@@ -848,17 +848,17 @@ export default function ExploreScreen() {
                               size={12}
                               color={
                                 overdue
-                                  ? Brand.danger
+                                  ? t.textSecondary
                                   : dueToday
-                                    ? Brand.warning
+                                    ? t.textSubtle
                                     : themedSubText
                               }
                             />
                             <ThemedText
                               style={[
                                 styles.dueDateText,
-                                overdue && { color: Brand.danger },
-                                dueToday && { color: Brand.warning },
+                                overdue && { color: t.textSecondary },
+                                dueToday && { color: t.textSubtle },
                               ]}
                               lightColor={Palette.light.textSubtle}
                               darkColor={Palette.dark.textSubtle}
@@ -1046,7 +1046,7 @@ export default function ExploreScreen() {
                                         borderRadius: 4,
                                         backgroundColor:
                                           i < rec.completedSessions
-                                            ? "#0A8F5A"
+                                            ? isDarkMode ? "#F0F1F3" : "#111318"
                                             : isDarkMode
                                               ? "#252930"
                                               : "#E0E2E6",
@@ -1057,7 +1057,7 @@ export default function ExploreScreen() {
                                 <Text
                                   fontSize={13}
                                   fontWeight="700"
-                                  color={done ? "#0A8F5A" : "$colorSubtle"}
+                                  color={done ? "$color" : "$colorSubtle"}
                                 >
                                   {rec.completedSessions}/{req}
                                   {done ? " ✓" : ""}
@@ -1158,7 +1158,7 @@ export default function ExploreScreen() {
                             fontWeight="600"
                             color={
                               isOverdue(refreshedDetailTask)
-                                ? Brand.danger
+                                ? t.textSecondary
                                 : undefined
                             }
                           >
@@ -1243,7 +1243,7 @@ export default function ExploreScreen() {
                                   : "check-box-outline-blank"
                               }
                               size={22}
-                              color={sub.completed ? "#0A8F5A" : themedSubText}
+                              color={sub.completed ? t.textPrimary : themedSubText}
                             />
                           </Button>
                           <Text
@@ -1311,8 +1311,8 @@ export default function ExploreScreen() {
                             name="add-circle"
                             size={24}
                             color={
-                              subtaskInput.trim() ? "#0A8F5A" : themedSubText
-                            }
+                            subtaskInput.trim() ? t.textPrimary : themedSubText
+                          }
                           />
                         </Button>
                       </XStack>
@@ -1380,8 +1380,8 @@ export default function ExploreScreen() {
                       </Button>
                       <Button
                         flex={1}
-                        backgroundColor={Brand.danger}
-                        color="#FFFFFF"
+                        backgroundColor={t.chipBg}
+                        color={t.textSecondary}
                         borderRadius={14}
                         height={48}
                         pressStyle={{ opacity: 0.85 }}
@@ -1389,7 +1389,7 @@ export default function ExploreScreen() {
                           <MaterialIcons
                             name="delete"
                             size={18}
-                            color="#FFFFFF"
+                            color={t.textSecondary}
                           />
                         }
                         onPress={() => handleDelete(refreshedDetailTask.id)}
@@ -2166,7 +2166,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#D94141",
+    backgroundColor: "#717882",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2253,7 +2253,7 @@ const styles = StyleSheet.create({
   },
   taskCardOverdue: {
     borderLeftWidth: 3,
-    borderLeftColor: Brand.danger,
+    borderLeftColor: "#9AA0A8",
   },
   taskContentRow: {
     flexDirection: "row",

@@ -27,7 +27,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, Palette, Shadows } from "@/constants/theme";
+import { Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAccentColor } from "@/hooks/use-accent-color";
 import {
@@ -275,17 +275,12 @@ export default function PomodoroScreen() {
   const required =
     record?.requiredSessions ?? getRequiredSessions(taskPriority);
 
-  const phaseColor = isDarkMode
-    ? phase === "focus"
-      ? Palette.dark.textPrimary
+  const phaseColor =
+    phase === "focus"
+      ? t.textPrimary
       : phase === "short_break"
-        ? Brand.successLight
-        : accentColor
-    : phase === "focus"
-      ? "#111318"
-      : phase === "short_break"
-        ? "#0A8F5A"
-        : "#3B7BF2";
+        ? t.textSecondary
+        : accentColor;
 
   const trackColor = isDarkMode ? "#2E333A" : "#E8EAED";
 

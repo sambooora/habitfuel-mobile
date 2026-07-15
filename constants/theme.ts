@@ -14,30 +14,31 @@
 import { Platform } from "react-native";
 
 // ─── Brand / Accent Colors ──────────────────────────────────
+// Monochrome — black, white, and grays only.
 export const Brand = {
-  primary: "#3B7BF2", // Main accent — good contrast on both themes
-  primaryLight: "#5B93F5", // Lighter variant for dark mode interactive
-  primaryDark: "#2A5FCC", // Darker variant for light mode hover/press
-  primaryMuted: "#3B7BF220", // Translucent for backgrounds
+  primary: "#111318",
+  primaryLight: "#555B64",
+  primaryDark: "#111318",
+  primaryMuted: "#11131820",
 
-  success: "#0A8F5A",
-  successLight: "#12B873",
-  successBg: "#E6F5EE",
-  successBgDark: "#0A8F5A1A",
+  success: "#555B64",
+  successLight: "#717882",
+  successBg: "#F0F2F4",
+  successBgDark: "#FFFFFF0A",
 
-  danger: "#D94141",
-  dangerLight: "#E25B5B",
-  dangerBg: "#FDECEC",
-  dangerBgDark: "#D941411A",
+  danger: "#717882",
+  dangerLight: "#9AA0A8",
+  dangerBg: "#F0F2F4",
+  dangerBgDark: "#FFFFFF0A",
 
-  warning: "#E8A317",
-  warningLight: "#F0B840",
-  warningBg: "#FFF5E0",
-  warningBgDark: "#E8A3171A",
+  warning: "#9AA0A8",
+  warningLight: "#C8CDD3",
+  warningBg: "#F0F2F4",
+  warningBgDark: "#FFFFFF0A",
 
-  info: "#3B7BF2",
-  infoBg: "#EBF1FE",
-  infoBgDark: "#3B7BF21A",
+  info: "#555B64",
+  infoBg: "#F0F2F4",
+  infoBgDark: "#FFFFFF0A",
 } as const;
 
 // ─── Semantic Palette ───────────────────────────────────────
@@ -52,7 +53,7 @@ export const Palette = {
     // Borders & dividers
     border: "#E0E2E6", // Default border
     borderSubtle: "#ECEEF1", // Subtle divider
-    borderFocus: "#3B7BF2", // Focused input border
+    borderFocus: "#111318", // Focused input border
 
     // Text — all meet WCAG AA on cardBg (#FFF)
     textPrimary: "#111318", // Primary text — 15.4:1 on white
@@ -75,7 +76,7 @@ export const Palette = {
     tabBarBg: "#FFFFFF",
     tabBarBorder: "#E0E2E6",
     tabIconDefault: "#8A9099", // 4.5:1 on white
-    tabIconActive: "#3B7BF2",
+    tabIconActive: "#111318",
 
     // FAB
     fabBg: "#111318",
@@ -93,12 +94,12 @@ export const Palette = {
     weekDayActiveBg: "#111318",
     weekDayText: "#717882",
     weekDayActiveText: "#FFFFFF",
-    weekDateText: "#111318",
+    weekDateText: "#717882",
     weekDateActiveText: "#FFFFFF",
 
     // Stat cards
     statCardBg: "#FFFFFF",
-    statCardActiveBg: "#EBF1FE", // Light blue tint
+    statCardActiveBg: "#F0F2F4",
     statIconBg: "#F0F2F4",
 
     // Chart
@@ -131,8 +132,8 @@ export const Palette = {
     habitIconColor: "#111318",
 
     // Transaction icon backgrounds (finance)
-    transactionIncomeBg: "#E6F5EE",
-    transactionIncomeIcon: "#0A8F5A",
+    transactionIncomeBg: "#F0F2F4",
+    transactionIncomeIcon: "#555B64",
     transactionExpenseBg: "#F0F2F4",
     transactionExpenseIcon: "#555B64",
 
@@ -150,7 +151,7 @@ export const Palette = {
     // Borders & dividers
     border: "#2E333A", // Default border — visible on cardBg
     borderSubtle: "#252930", // Subtle divider
-    borderFocus: "#5B93F5", // Focused input border
+    borderFocus: "#A0A7B0", // Focused input border
 
     // Text — all meet WCAG AA on cardBg (#1A1D22)
     textPrimary: "#F0F1F3", // Primary text — 13.8:1 on #1A1D22
@@ -173,34 +174,34 @@ export const Palette = {
     tabBarBg: "#131518",
     tabBarBorder: "#252930",
     tabIconDefault: "#636A73", // 4.5:1 on tabBarBg
-    tabIconActive: "#5B93F5",
+    tabIconActive: "#F0F1F3",
 
     // FAB
-    fabBg: "#3B7BF2", // Use accent in dark mode — visible!
-    fabIcon: "#FFFFFF",
-    fabShadow: "#3B7BF244",
+    fabBg: "#F0F1F3",
+    fabIcon: "#111318",
+    fabShadow: "#FFFFFF22",
 
     // Misc
     skeleton: "#252930",
     overlay: "#000000AA",
     progressTrack: "#252930",
-    progressFill: "#5B93F5",
+    progressFill: "#A0A7B0",
 
     // Week day pills
     weekDayBg: "#1A1D22",
-    weekDayActiveBg: "#3B7BF2",
+    weekDayActiveBg: "#F0F1F3",
     weekDayText: "#7B838D",
-    weekDayActiveText: "#FFFFFF",
+    weekDayActiveText: "#111318",
     weekDateText: "#E4E6E9",
     weekDateActiveText: "#FFFFFF",
 
     // Stat cards
     statCardBg: "#1A1D22",
-    statCardActiveBg: "#1E2A40", // Dark blue tint
+    statCardActiveBg: "#252930",
     statIconBg: "#252930",
 
     // Chart
-    chartBarPrimary: "#5B93F5", // Visible accent on dark card
+    chartBarPrimary: "#A0A7B0",
     chartBarMuted: "#3A3F47",
 
     // Badge
@@ -216,8 +217,8 @@ export const Palette = {
     taskIconColor: "#A0A7B0",
 
     // Play button
-    playBg: "#3B7BF2",
-    playIcon: "#FFFFFF",
+    playBg: "#F0F1F3",
+    playIcon: "#111318",
 
     // Empty state
     emptyIcon: "#3A3F47",
@@ -229,8 +230,8 @@ export const Palette = {
     habitIconColor: "#111318",
 
     // Transaction icon backgrounds (finance)
-    transactionIncomeBg: "#0A8F5A1A",
-    transactionIncomeIcon: "#12B873",
+    transactionIncomeBg: "#252930",
+    transactionIncomeIcon: "#A0A7B0",
     transactionExpenseBg: "#252930",
     transactionExpenseIcon: "#A0A7B0",
 
@@ -248,8 +249,8 @@ export function getTheme(mode: ThemeMode): ThemePalette {
 }
 
 // ─── Legacy Color Tokens (for backwards compat) ─────────────
-const tintColorLight = "#3B7BF2";
-const tintColorDark = "#5B93F5";
+const tintColorLight = "#111318";
+const tintColorDark = "#F0F1F3";
 
 export const Colors = {
   light: {
@@ -360,8 +361,8 @@ export const Shadows = {
       elevation: 2,
     },
     fab: {
-      shadowColor: "#3B7BF2",
-      shadowOpacity: 0.4,
+      shadowColor: "#000000",
+      shadowOpacity: 0.25,
       shadowRadius: 14,
       shadowOffset: { width: 0, height: 8 },
       elevation: 10,

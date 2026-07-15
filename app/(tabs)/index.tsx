@@ -2,6 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { TABBAR_SCROLL_PADDING } from "@/components/floating-tab-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, Fonts, Palette, Shadows } from "@/constants/theme";
+import { Fonts, Palette, Shadows } from "@/constants/theme";
 import { useAccentColor } from "@/hooks/use-accent-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -184,19 +185,17 @@ export default function HomeScreen() {
                 style={[
                   styles.congratsStreakBadge,
                   {
-                    backgroundColor: isDarkMode
-                      ? Brand.successBgDark
-                      : Brand.successBg,
+                    backgroundColor: t.chipBg,
                   },
                 ]}
               >
                 <MaterialIcons
                   name="local-fire-department"
                   size={16}
-                  color={Brand.success}
+                  color={t.textPrimary}
                 />
                 <ThemedText
-                  style={[styles.congratsStreakText, { color: Brand.success }]}
+                  style={[styles.congratsStreakText, { color: t.textPrimary }]}
                 >
                   {consistencyStreak}-day streak!
                 </ThemedText>
@@ -243,6 +242,10 @@ export default function HomeScreen() {
                 Hello, {nickname || "User"}!
               </ThemedText>
             </View>
+            <Image
+              source={require("@/assets/images/icon.png")}
+              style={styles.appLogo}
+            />
           </View>
 
           {/* ── Consistency Card ────────────────────────────── */}
@@ -359,8 +362,8 @@ export default function HomeScreen() {
                   }
                   darkColor={
                     day.active
-                      ? Palette.dark.weekDateActiveText
-                      : Palette.dark.weekDateText
+                    ? Palette.dark.weekDayActiveText
+                    : Palette.dark.weekDayText
                   }
                 >
                   {day.date}
@@ -446,7 +449,7 @@ export default function HomeScreen() {
                       ]}
                     >
                       {done ? (
-                        <MaterialIcons name="check" size={20} color="#0A8F5A" />
+                        <MaterialIcons name="check" size={20} color={t.textPrimary} />
                       ) : (
                         <MaterialIcons
                           name={habit.icon as any}
@@ -458,9 +461,9 @@ export default function HomeScreen() {
                     <ThemedText
                       style={[styles.habitLabel, done && styles.habitLabelDone]}
                       lightColor={
-                        done ? "#0A8F5A" : Palette.light.textSecondary
+                        done ? t.textPrimary : Palette.light.textSecondary
                       }
-                      darkColor={done ? "#3DBB7A" : Palette.dark.textSecondary}
+                      darkColor={done ? t.textPrimary : Palette.dark.textSecondary}
                     >
                       {habit.label}
                     </ThemedText>
@@ -588,25 +591,19 @@ export default function HomeScreen() {
                           style={[
                             styles.sessionBadge,
                             {
-                              backgroundColor: allDone
-                                ? isDarkMode
-                                  ? "#0A8F5A22"
-                                  : "#E6F5EE"
-                                : isDarkMode
-                                  ? "#252930"
-                                  : "#F0F2F4",
+                              backgroundColor: t.chipBg,
                             },
                           ]}
                         >
                           <MaterialIcons
                             name="timer"
                             size={10}
-                            color={allDone ? "#0A8F5A" : t.textSubtle}
+                            color={allDone ? t.textPrimary : t.textSubtle}
                           />
                           <ThemedText
                             style={[
                               styles.sessionBadgeText,
-                              { color: allDone ? "#0A8F5A" : t.textSubtle },
+                              { color: allDone ? t.textPrimary : t.textSubtle },
                             ]}
                           >
                             {completedSessions}/{required}
@@ -723,6 +720,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  appLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
   },
   dateLabel: {
     fontSize: 12,
@@ -878,7 +880,7 @@ const styles = StyleSheet.create({
   },
   habitIconDone: {
     borderWidth: 2,
-    borderColor: "#0A8F5A",
+    borderColor: "#9AA0A8",
   },
   habitLabel: {
     fontSize: 11,
