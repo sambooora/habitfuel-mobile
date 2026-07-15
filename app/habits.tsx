@@ -224,7 +224,7 @@ export default function HabitsScreen() {
               onPress={() => setActiveFilter(opt.key)}
               style={[
                 styles.tab,
-                isActive && { backgroundColor: accentColor },
+                isActive && { backgroundColor: '#00000' },
                 !isActive && { backgroundColor: t.cardBg },
               ]}
             >
@@ -520,7 +520,7 @@ export default function HabitsScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleSave}
-              style={[styles.saveBtn, { backgroundColor: accentColor }]}
+              style={[styles.saveBtn, { backgroundColor: isDarkMode ? "#252930" : "#F0F2F4" }]}
             >
               <ThemedText style={styles.saveBtnText}>
                 {editingHabit ? "Save Changes" : "Create Habit"}

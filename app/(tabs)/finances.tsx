@@ -983,7 +983,7 @@ export default function FinanceScreen() {
                     color="$colorSubtle"
                     marginBottom="$2"
                   >
-                    Amount ($)
+                    Amount
                   </Text>
                   <Input
                     value={formAmount}
