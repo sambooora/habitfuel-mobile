@@ -1,6 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Modal,
@@ -9,15 +9,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TABBAR_SCROLL_PADDING } from "@/components/floating-tab-bar";
+import { HabitHeatmap } from "@/components/habit-heatmap";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Fonts, Palette, Shadows } from "@/constants/theme";
 import { useAccentColor } from "@/hooks/use-accent-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
+  getDateKey,
   HABIT_COLOR_OPTIONS,
   useHabitStorage,
 } from "@/hooks/use-habit-storage";
@@ -29,6 +32,9 @@ import {
   TAG_CONFIG,
   useTaskStorage,
 } from "@/hooks/use-task-storage";
+
+/** Remembers the day the "all habits done" popup was last shown. */
+const CONGRATS_STORAGE_KEY = "@habitfuel_last_congrats";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -44,9 +50,9 @@ export default function HomeScreen() {
     habits,
     isCompletedToday,
     toggleCompletion,
-    consistencyStreak,
+    overallHeatmap,
+    activeDaysStreak,
     consistencyPercent,
-    dailyRates,
   } = useHabitStorage();
 
   // ── Reload pomodoro data when tab gains focus ────────
@@ -61,22 +67,33 @@ export default function HomeScreen() {
   // ── Congratulations popup ─────────────────────────────
   const [showCongrats, setShowCongrats] = useState(false);
 
-  // Computed BEFORE the ref so we can seed the ref with the real initial value.
-  // This prevents the popup from re-firing when HomeScreen re-mounts (e.g.
-  // after returning from the Pomodoro screen) while all habits are already done.
+  // `undefined` while the last-shown date is still being read from storage.
+  const [congratsDate, setCongratsDate] = useState<string | null | undefined>(
+    undefined,
+  );
+
   const allHabitsDoneToday = useMemo(() => {
     if (habits.length === 0) return false;
     return habits.every((h) => isCompletedToday(h.id));
   }, [habits, isCompletedToday]);
 
-  const prevAllDoneRef = useRef(allHabitsDoneToday);
-
   useEffect(() => {
-    if (splashDone && allHabitsDoneToday && !prevAllDoneRef.current) {
-      setShowCongrats(true);
-    }
-    prevAllDoneRef.current = allHabitsDoneToday;
-  }, [allHabitsDoneToday, splashDone]);
+    AsyncStorage.getItem(CONGRATS_STORAGE_KEY).then(setCongratsDate);
+  }, []);
+
+  // Habits can be unchecked and rechecked freely now, so the popup is gated
+  // on the date instead of on a false→true transition. It fires once a day.
+  useEffect(() => {
+    if (congratsDate === undefined) return;
+    if (!splashDone || !allHabitsDoneToday) return;
+
+    const todayKey = getDateKey();
+    if (congratsDate === todayKey) return;
+
+    setCongratsDate(todayKey);
+    AsyncStorage.setItem(CONGRATS_STORAGE_KEY, todayKey);
+    setShowCongrats(true);
+  }, [allHabitsDoneToday, congratsDate, splashDone]);
 
   // Resolve habit colors for dark mode
   const resolveHabitColors = (bg: string, iconColor: string) => {
@@ -180,7 +197,7 @@ export default function HomeScreen() {
             </ThemedText>
 
             {/* Streak badge */}
-            {consistencyStreak > 0 && (
+            {activeDaysStreak > 0 && (
               <View
                 style={[
                   styles.congratsStreakBadge,
@@ -197,7 +214,7 @@ export default function HomeScreen() {
                 <ThemedText
                   style={[styles.congratsStreakText, { color: t.textPrimary }]}
                 >
-                  {consistencyStreak}-day streak!
+                  {activeDaysStreak}-day streak!
                 </ThemedText>
               </View>
             )}
@@ -261,9 +278,18 @@ export default function HomeScreen() {
               >
                 CONSISTENCY SCORE
               </ThemedText>
+              <ThemedText
+                style={styles.cardTitle}
+                lightColor={Palette.light.textSubtle}
+                darkColor={Palette.dark.textSubtle}
+              >
+                LAST MONTH
+              </ThemedText>
             </View>
 
-            {/* Score + mini chart side by side : Score menghitung persentase dari progress 69 hari */}
+            {/* Score + last-month heatmap side by side. The score is a rolling
+                69-day completion rate, so a missed habit lowers it instead of
+                wiping it out. */}
             <View style={styles.scoreRow}>
               <View style={styles.scoreLeft}>
                 <ThemedText
@@ -280,28 +306,23 @@ export default function HomeScreen() {
                   lightColor={Palette.light.textSubtle}
                   darkColor={Palette.dark.textSubtle}
                 >
-                  {consistencyStreak > 0
-                    ? `${consistencyStreak}-day streak 🔥`
+                  {activeDaysStreak > 0
+                    ? `${activeDaysStreak}-day active streak 🔥`
                     : "No streak yet"}
                 </ThemedText>
               </View>
-              <View style={styles.chart}>
-                {dailyRates.map((rate, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.chartBar,
-                      {
-                        height: Math.max(4, Math.round(rate * 32)),
-                        backgroundColor: t.chartBarPrimary,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
+              <HabitHeatmap
+                cells={overallHeatmap}
+                accent={t.chartBarPrimary}
+                emptyColor={t.progressTrack}
+                labelColor={t.textSubtle}
+                todayRingColor={t.textSecondary}
+                cellSize={10}
+                gap={3}
+              />
             </View>
 
-            {/* Progress bar: progress 69 hari — resets jika 1 habit saja tidak dilakukan */}
+            {/* Progress bar mirrors the rolling 69-day rate */}
             <View
               style={[
                 styles.progressTrack,
@@ -398,34 +419,10 @@ export default function HomeScreen() {
           <View
             style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}
           >
-            {/* Locked banner — shown once all habits are done for the day */}
-            {allHabitsDoneToday && (
-              <View style={styles.habitLockedRow}>
-                <MaterialIcons
-                  name="lock"
-                  size={12}
-                  color={
-                    isDarkMode
-                      ? Palette.dark.textSubtle
-                      : Palette.light.textSubtle
-                  }
-                />
-                <ThemedText
-                  style={styles.habitLockedText}
-                  lightColor={Palette.light.textSubtle}
-                  darkColor={Palette.dark.textSubtle}
-                >
-                  All done for today · resets tomorrow
-                </ThemedText>
-              </View>
-            )}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[
-                styles.habitScroll,
-                allHabitsDoneToday && { opacity: 0.6 },
-              ]}
+              contentContainerStyle={styles.habitScroll}
             >
               {habits.map((habit) => {
                 const done = isCompletedToday(habit.id);
@@ -437,8 +434,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={habit.id}
                     style={styles.habitItem}
-                    activeOpacity={done ? 1 : 0.7}
-                    disabled={done}
+                    activeOpacity={0.7}
                     onPress={() => toggleCompletion(habit.id)}
                   >
                     <View
@@ -783,15 +779,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 44,
   },
-  chart: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 6,
-  },
-  chartBar: {
-    width: 6,
-    borderRadius: 99,
-  },
   progressTrack: {
     height: 6,
     borderRadius: 99,
@@ -852,15 +839,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Habits ──────────────────────────────────────────────────
-  habitLockedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  habitLockedText: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
   habitScroll: {
     flexDirection: "row",
     gap: 16,

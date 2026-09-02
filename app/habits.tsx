@@ -1,4 +1,3 @@
-// @ts-nocheck
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
+  useWindowDimensions,
   View,
 } from "react-native";
 import {
@@ -18,14 +18,17 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
+import { HabitHeatmap, HeatmapLegend } from "@/components/habit-heatmap";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Palette, Shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAccentColor } from "@/hooks/use-accent-color";
 import {
+  CONSISTENCY_TARGET,
   HABIT_CATEGORIES,
   HABIT_COLOR_OPTIONS,
+  HABIT_HEATMAP_WEEKS,
   HABIT_ICON_OPTIONS,
   useHabitStorage,
   type HabitCategory,
@@ -43,6 +46,12 @@ const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
   { key: ALL_FILTER, label: "All" },
   ...HABIT_CATEGORIES,
 ];
+
+/** Horizontal space reserved for the heatmap's Mon/Wed/Fri labels. */
+const DAY_LABEL_WIDTH = 24;
+const LIST_PADDING = 16;
+const CARD_PADDING = 16;
+const HEATMAP_GAP = 3;
 
 function resolveHabitColors(
   habit: Habit,
@@ -65,6 +74,7 @@ function resolveHabitColors(
 export default function HabitsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === "dark";
@@ -74,14 +84,28 @@ export default function HabitsScreen() {
 
   const {
     habits,
-
     isLoading,
     addHabit,
     updateHabit,
     deleteHabit,
-    getWeekProgress,
-    getStreak,
+    getStats,
+    getHeatmap,
+    overallHeatmap,
+    activeDaysStreak,
+    consistencyPercent,
   } = useHabitStorage();
+
+  // -- Heatmap sizing ---------------------------------------------------------
+
+  // Squares grow/shrink with the viewport so 13 weeks always fill the card.
+  const heatmapCellSize = useMemo(() => {
+    const available =
+      windowWidth - LIST_PADDING * 2 - CARD_PADDING * 2 - DAY_LABEL_WIDTH;
+    const stride = Math.floor(available / HABIT_HEATMAP_WEEKS);
+    return Math.max(8, Math.min(16, stride - HEATMAP_GAP));
+  }, [windowWidth]);
+
+  const emptyCellColor = isDarkMode ? "#252930" : "#E8EAED";
 
   // -- Filter state -----------------------------------------------------------
 
@@ -224,29 +248,28 @@ export default function HabitsScreen() {
               onPress={() => setActiveFilter(opt.key)}
               style={[
                 styles.tab,
-                isActive && { backgroundColor: '#00000' },
-                !isActive && { backgroundColor: t.cardBg },
+                { backgroundColor: isActive ? t.chipBgActive : t.cardBg },
               ]}
             >
               <ThemedText
                 style={[styles.tabText, isActive && styles.tabTextActive]}
-                lightColor={isActive ? "#FFFFFF" : Palette.light.textSubtle}
-                darkColor={isActive ? "#FFFFFF" : Palette.dark.textSubtle}
+                lightColor={
+                  isActive ? t.chipTextActive : Palette.light.textSubtle
+                }
+                darkColor={
+                  isActive ? t.chipTextActive : Palette.dark.textSubtle
+                }
               >
                 {opt.label}
               </ThemedText>
               <View
                 style={[
                   styles.tabBadge,
-                  isActive && styles.tabBadgeActive,
-                  !isActive && { backgroundColor: t.chipBg },
+                  { backgroundColor: isActive ? t.cardBg : t.chipBg },
                 ]}
               >
                 <ThemedText
-                  style={[
-                    styles.tabBadgeText,
-                    isActive && styles.tabBadgeTextActive,
-                  ]}
+                  style={styles.tabBadgeText}
                   lightColor={
                     isActive
                       ? Palette.light.textPrimary
@@ -268,37 +291,64 @@ export default function HabitsScreen() {
     );
   };
 
-  const renderWeekDots = (habitId: string) => {
-    const progress = getWeekProgress(habitId);
-    const completedCount = progress.filter(Boolean).length;
-    const filledColor = isDarkMode ? "#E8EAED" : "#111318";
-    const emptyColor = isDarkMode ? "#2E333A" : "#E0E2E6";
-
-    return (
-      <View style={styles.weekRow}>
-        <View style={styles.dotsContainer}>
-          {progress.map((done, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: done ? filledColor : emptyColor,
-                },
-              ]}
-            />
-          ))}
-        </View>
-        <ThemedText style={[styles.weekCounter, { color: t.textSubtle }]}>
-          {completedCount}/7
+  const renderSummaryCard = () => (
+    <View style={[styles.card, { backgroundColor: t.cardBg }, shadow.card]}>
+      <View style={styles.summaryHeader}>
+        <ThemedText style={[styles.summaryLabel, { color: t.textSubtle }]}>
+          ALL HABITS · LAST MONTH
         </ThemedText>
+        <HeatmapLegend
+          accent={accentColor}
+          emptyColor={emptyCellColor}
+          labelColor={t.textSubtle}
+        />
       </View>
-    );
-  };
+
+      <View style={styles.summaryStats}>
+        <View style={styles.summaryStat}>
+          <ThemedText style={[styles.summaryValue, { color: t.textPrimary }]}>
+            {consistencyPercent}%
+          </ThemedText>
+          <ThemedText style={[styles.summaryCaption, { color: t.textSubtle }]}>
+            Last {CONSISTENCY_TARGET} days
+          </ThemedText>
+        </View>
+        <View style={[styles.summaryDivider, { backgroundColor: t.border }]} />
+        <View style={styles.summaryStat}>
+          <ThemedText style={[styles.summaryValue, { color: t.textPrimary }]}>
+            {activeDaysStreak}
+          </ThemedText>
+          <ThemedText style={[styles.summaryCaption, { color: t.textSubtle }]}>
+            Active day streak
+          </ThemedText>
+        </View>
+        <View style={[styles.summaryDivider, { backgroundColor: t.border }]} />
+        <View style={styles.summaryStat}>
+          <ThemedText style={[styles.summaryValue, { color: t.textPrimary }]}>
+            {habits.length}
+          </ThemedText>
+          <ThemedText style={[styles.summaryCaption, { color: t.textSubtle }]}>
+            Habits tracked
+          </ThemedText>
+        </View>
+      </View>
+
+      <HabitHeatmap
+        variant="calendar"
+        cells={overallHeatmap}
+        accent={accentColor}
+        emptyColor={emptyCellColor}
+        labelColor={t.textSubtle}
+        todayRingColor={t.textSecondary}
+        cellSize={24}
+        gap={6}
+      />
+    </View>
+  );
 
   const renderHabitCard = (habit: Habit) => {
     const colors = resolveHabitColors(habit, isDarkMode);
-    const streak = getStreak(habit.id);
+    const stats = getStats(habit.id);
 
     return (
       <View
@@ -309,7 +359,7 @@ export default function HabitsScreen() {
           {/* Icon */}
           <View style={[styles.iconCircle, { backgroundColor: colors.bg }]}>
             <MaterialIcons
-              name={habit.icon as any}
+              name={habit.icon as never}
               size={22}
               color={colors.icon}
             />
@@ -324,7 +374,7 @@ export default function HabitsScreen() {
               {habit.label}
             </ThemedText>
             <ThemedText style={[styles.streakText, { color: t.textSecondary }]}>
-              {streak} Day Streak
+              {stats.current} Day Streak
             </ThemedText>
           </View>
 
@@ -339,8 +389,32 @@ export default function HabitsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Week dots */}
-        {renderWeekDots(habit.id)}
+        {/* 13-week contribution grid — independent of every other habit */}
+        <View style={styles.heatmapWrap}>
+          <HabitHeatmap
+            cells={getHeatmap(habit.id, HABIT_HEATMAP_WEEKS)}
+            accent={colors.icon}
+            emptyColor={emptyCellColor}
+            labelColor={t.textSubtle}
+            todayRingColor={t.textSecondary}
+            cellSize={heatmapCellSize}
+            gap={HEATMAP_GAP}
+            showDayLabels
+            showMonthLabels
+          />
+        </View>
+
+        <View style={[styles.cardFooter, { borderTopColor: t.borderSubtle }]}>
+          <ThemedText style={[styles.footerStat, { color: t.textSubtle }]}>
+            Best {stats.best}d
+          </ThemedText>
+          <ThemedText style={[styles.footerStat, { color: t.textSubtle }]}>
+            {stats.total} days logged
+          </ThemedText>
+          <ThemedText style={[styles.footerStat, { color: t.textSubtle }]}>
+            {stats.rate}% rate
+          </ThemedText>
+        </View>
       </View>
     );
   };
@@ -355,7 +429,7 @@ export default function HabitsScreen() {
       onRequestClose={() => setModalVisible(false)}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={[styles.modalOverlay]}>
+        <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: t.cardBg }]}>
             {/* Modal header */}
             <View style={styles.modalHeader}>
@@ -457,16 +531,14 @@ export default function HabitsScreen() {
                       style={[
                         styles.iconOption,
                         {
-                          backgroundColor: active
-                            ? t.taskIconBg
-                            : t.chipBg,
+                          backgroundColor: active ? t.taskIconBg : t.chipBg,
                           borderColor: active ? accentColor : "transparent",
                           borderWidth: 2,
                         },
                       ]}
                     >
                       <MaterialIcons
-                        name={opt.icon as any}
+                        name={opt.icon as never}
                         size={22}
                         color={active ? accentColor : t.textSecondary}
                       />
@@ -520,9 +592,11 @@ export default function HabitsScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleSave}
-              style={[styles.saveBtn, { backgroundColor: isDarkMode ? "#252930" : "#F0F2F4" }]}
+              style={[styles.saveBtn, { backgroundColor: t.chipBgActive }]}
             >
-              <ThemedText style={styles.saveBtnText}>
+              <ThemedText
+                style={[styles.saveBtnText, { color: t.chipTextActive }]}
+              >
                 {editingHabit ? "Save Changes" : "Create Habit"}
               </ThemedText>
             </TouchableOpacity>
@@ -572,6 +646,8 @@ export default function HabitsScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {habits.length > 0 && renderSummaryCard()}
+
           {filteredHabits.length === 0 && !isLoading && (
             <View style={styles.emptyWrap}>
               <MaterialIcons
@@ -587,15 +663,6 @@ export default function HabitsScreen() {
 
           {filteredHabits.map((habit) => renderHabitCard(habit))}
         </ScrollView>
-
-        {/* FAB */}
-        {/*<TouchableOpacity
-          activeOpacity={0.8}
-          onPress={openAddModal}
-          style={[styles.fab, { backgroundColor: t.fabBg }, shadow.fab]}
-        >
-          <MaterialIcons name="add" size={28} color={t.fabIcon} />
-        </TouchableOpacity>*/}
       </SafeAreaView>
 
       {/* Add / Edit modal */}
@@ -655,7 +722,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
-  tabActive: {},
   tabText: {
     fontSize: 13,
     fontWeight: "600",
@@ -671,15 +737,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 6,
   },
-  tabBadgeActive: {
-    backgroundColor: "rgba(255,255,255,0.25)",
-  },
   tabBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-  },
-  tabBadgeTextActive: {
-    color: "#FFFFFF",
   },
 
   // -- List -------------------------------------------------------------------
@@ -687,7 +747,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: LIST_PADDING,
     paddingTop: 4,
     paddingBottom: 100,
     gap: 12,
@@ -696,7 +756,7 @@ const styles = StyleSheet.create({
   // -- Card -------------------------------------------------------------------
   card: {
     borderRadius: 16,
-    padding: 16,
+    padding: CARD_PADDING,
   },
   cardTop: {
     flexDirection: "row",
@@ -729,25 +789,55 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // -- Week dots --------------------------------------------------------------
-  weekRow: {
+  // -- Heatmap ----------------------------------------------------------------
+  heatmapWrap: {
+    marginTop: 16,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  footerStat: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  // -- Summary card -----------------------------------------------------------
+  summaryHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 14,
     justifyContent: "space-between",
+    marginBottom: 14,
   },
-  dotsContainer: {
+  summaryLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+  summaryStats: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
+    marginBottom: 16,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  summaryStat: {
+    flex: 1,
+    gap: 2,
   },
-  weekCounter: {
-    fontSize: 13,
-    fontWeight: "600",
+  summaryDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: "stretch",
+    marginHorizontal: 12,
+  },
+  summaryValue: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  summaryCaption: {
+    fontSize: 11,
+    fontWeight: "500",
   },
 
   // -- Empty state ------------------------------------------------------------
@@ -760,18 +850,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     textAlign: "center",
-  },
-
-  // -- FAB --------------------------------------------------------------------
-  fab: {
-    position: "absolute",
-    bottom: 28,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
   },
 
   // -- Modal ------------------------------------------------------------------
@@ -865,7 +943,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   saveBtnText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
   },
