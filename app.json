@@ -1,61 +1,59 @@
 {
-  "expo": {
-    "name": "habitfuel-mobile",
-    "slug": "habitfuel-mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "habitfuelmobile",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.habitfuel.mobile",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.habitfuel.mobile"
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ],
-      "expo-font",
-      "expo-web-browser"
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "b03a7ed8-d6b4-4919-b642-a2a8c65b16f5"
-      }
-    },
-    "owner": "sambooora"
-  }
+ "expo": {
+  "name": "habitfuel-mobile",
+  "slug": "habitfuel-mobile",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "icon": "./assets/images/icon.png",
+  "scheme": "habitfuelmobile",
+  "userInterfaceStyle": "automatic",
+  "ios": {
+   "supportsTablet": true,
+   "bundleIdentifier": "com.habitfuel.mobile",
+   "infoPlist": {
+    "ITSAppUsesNonExemptEncryption": false
+   }
+  },
+  "android": {
+   "adaptiveIcon": {
+    "backgroundColor": "#FFFFFF",
+    "foregroundImage": "./assets/images/android-icon-foreground.png",
+    "monochromeImage": "./assets/images/android-icon-monochrome.png"
+   },
+   "predictiveBackGestureEnabled": false,
+   "package": "com.habitfuel.mobile"
+  },
+  "web": {
+   "output": "static",
+   "favicon": "./assets/images/favicon.png"
+  },
+  "plugins": [
+   "expo-router",
+   [
+    "expo-splash-screen",
+    {
+     "image": "./assets/images/splash-icon.png",
+     "imageWidth": 200,
+     "resizeMode": "contain",
+     "backgroundColor": "#ffffff",
+     "dark": {
+      "backgroundColor": "#000000"
+     }
+    }
+   ],
+   "expo-font",
+   "expo-web-browser"
+  ],
+  "experiments": {
+   "typedRoutes": true,
+   "reactCompiler": true
+  },
+  "extra": {
+   "router": {},
+   "eas": {
+    "projectId": "b03a7ed8-d6b4-4919-b642-a2a8c65b16f5"
+   }
+  },
+  "owner": "sambooora"
+ }
 }
